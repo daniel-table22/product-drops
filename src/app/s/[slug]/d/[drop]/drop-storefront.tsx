@@ -158,14 +158,14 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
       {/* Item list — no card backgrounds, just stacked */}
       {items.length > 0 && (
-        <div className="mx-2 flex flex-col">
+        <div className="mx-2 flex flex-col gap-8">
           {items.map((item) => {
             const qty = cart[item.id] ?? 0;
             const soldOut = item.available_qty === 0;
             const inCart = qty > 0;
 
             return (
-              <div key={item.id} className="py-4">
+              <div key={item.id}>
                 {/* Photo + controls row */}
                 <div className="flex gap-2">
                   {/* Photo — square, ~62% width */}
