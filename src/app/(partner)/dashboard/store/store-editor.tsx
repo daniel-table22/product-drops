@@ -192,9 +192,9 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
 
       {/* Right: phone preview */}
       {partner.slug && (
-        <div className="hidden lg:flex flex-col items-center justify-start flex-1 bg-accent-12 -mr-8 -my-10 px-10 pt-10 pb-10 gap-3">
+        <div className="hidden lg:flex flex-col items-center justify-start flex-1 bg-neutral-3 -mr-8 -my-10 px-10 pt-10 pb-10 gap-3">
           {/* Preview note */}
-          <p className="text-size-1 text-accent-a8 text-center self-center">
+          <p className="text-size-1 text-neutral-10 text-center self-center">
             Using placeholder images until assets are uploaded
           </p>
           {/* Tab switcher */}
