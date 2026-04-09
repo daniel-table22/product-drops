@@ -33,6 +33,21 @@ export default async function DropsPage() {
     .eq("partner_id", partner.id)
     .eq("opted_in", true);
 
+  // Order counts per drop
+  const dropIds = (drops ?? []).map((d) => d.id);
+  const { data: orderCounts } = dropIds.length > 0
+    ? await supabase
+        .from("orders")
+        .select("drop_id")
+        .in("drop_id", dropIds)
+        .neq("state", "no_show")
+    : { data: [] };
+
+  const orderCountByDrop = (orderCounts ?? []).reduce<Record<string, number>>((acc, o) => {
+    acc[o.drop_id] = (acc[o.drop_id] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="px-8 py-10 space-y-6">
       <PageHeader title="Drops" size="large" actions={<Button asChild size="sm"><a href="/dashboard/drops/new">New drop</a></Button>} />
@@ -48,7 +63,7 @@ export default async function DropsPage() {
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Order window</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Pickup window</th>
-                <th className="px-4 py-3 text-right font-medium text-neutral-11">Sign-ups</th>
+                <th className="px-4 py-3 text-right font-medium text-neutral-11">Orders / audience</th>
                 <th className="px-4 py-3 text-right font-medium text-neutral-11"></th>
               </tr>
             </thead>
@@ -75,7 +90,7 @@ export default async function DropsPage() {
                     {new Date(drop.pickup_window_ends_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right text-neutral-12 font-mono text-size-2">
-                    {subscriberCount ?? 0} / {drop.blast_count}
+                    {orderCountByDrop[drop.id] ?? 0} / {subscriberCount ?? 0}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">

@@ -397,7 +397,11 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                         <OrderStateBadge state={order.state} />
                         {order.state === "paid" && (
                           <form action={() => handleOrderState(order.id, "ready")}>
-                            <Button size="sm" variant="outline" type="submit">Mark ready</Button>
+                            <Button size="sm" variant="outline" type="submit"
+                              disabled={!pickupOpen}
+                              title={!pickupOpen ? `Pickup opens ${new Date(drop.pickup_window_starts_at).toLocaleDateString()}` : undefined}>
+                              Mark ready
+                            </Button>
                           </form>
                         )}
                         {order.state === "ready" && (
