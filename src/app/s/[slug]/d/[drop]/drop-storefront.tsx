@@ -72,6 +72,12 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
   const [cart, setCart] = useState<Record<string, number>>({});
 
+  // Apply brand bg to <body> so the page chrome matches the storefront theme
+  useEffect(() => {
+    document.body.style.backgroundColor = partner.bg_color;
+    return () => { document.body.style.backgroundColor = ""; };
+  }, [partner.bg_color]);
+
   const ordersOpen = drop.state === "orders_open";
   const countdown = useCountdown(drop.order_window_ends_at);
   const fontFamily = fontFamilies[partner.font_style] ?? fontFamilies.sans;
