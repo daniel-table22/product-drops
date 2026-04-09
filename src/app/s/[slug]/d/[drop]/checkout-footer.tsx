@@ -26,6 +26,11 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
   const [applePayError, setApplePayError] = useState<string | null>(null);
   const prRef = useRef<PaymentRequest | null>(null);
   const stripeRef = useRef<Stripe | null>(null);
+  // Keep latest cart state accessible inside the stale paymentmethod closure
+  const cartLinesRef = useRef(cartLines);
+  const subtotalCentsRef = useRef(subtotalCents);
+  cartLinesRef.current = cartLines;
+  subtotalCentsRef.current = subtotalCents;
   const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
 
   useEffect(() => {
@@ -56,8 +61,8 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
 
         const intentResult = await createPaymentIntent({
           dropId: drop.id,
-          cartLines,
-          subtotalCents,
+          cartLines: cartLinesRef.current,
+          subtotalCents: subtotalCentsRef.current,
           partnerStripeAccountId: partner.stripe_account_id,
           customerName: ev.payerName ?? "Guest",
           customerEmail: ev.payerEmail ?? "",
