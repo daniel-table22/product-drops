@@ -18,10 +18,9 @@ interface Props {
   partner: { slug: string; stripe_account_id: string };
   cartLines: CartLine[];
   subtotalCents: number;
-  onCheckoutOpen: () => void;
 }
 
-export function CheckoutFooter({ drop, partner, cartLines, subtotalCents, onCheckoutOpen }: Props) {
+export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Props) {
   const [canApplePay, setCanApplePay] = useState<boolean | null>(null); // null = loading
   const [applePayPending, setApplePayPending] = useState(false);
   const [applePayError, setApplePayError] = useState<string | null>(null);

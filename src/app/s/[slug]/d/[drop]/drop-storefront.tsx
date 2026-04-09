@@ -353,7 +353,6 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
         partner={{ slug: partner.slug, stripe_account_id: partner.stripe_account_id }}
         cartLines={cartLines}
         subtotalCents={subtotalCents}
-        onCheckoutOpen={() => {}}
       />
     </div>
   );
