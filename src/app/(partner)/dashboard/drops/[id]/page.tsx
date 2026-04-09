@@ -15,7 +15,7 @@ export default async function DropDetailPage({
 
   const { data: partner } = await supabase
     .from("partners")
-    .select("id, slug, onboarding_state")
+    .select("id, slug, onboarding_state, business_name")
     .eq("user_id", user.id)
     .single();
 
@@ -66,6 +66,7 @@ export default async function DropDetailPage({
       isStripeReady={partner.onboarding_state === "stripe_ready"}
       partnerSlug={partner.slug}
       subscriberCount={subscriberCount ?? 0}
+      businessName={partner.business_name}
     />
   );
 }

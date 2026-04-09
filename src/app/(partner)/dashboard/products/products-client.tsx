@@ -59,6 +59,7 @@ export function ProductsClient({ items, userId }: { items: Item[]; userId: strin
           <table className="w-full text-size-2">
             <thead className="bg-neutral-2 border-b border-neutral-6">
               <tr>
+                <th className="px-4 py-3 w-14"></th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Name</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Description</th>
                 <th className="px-4 py-3 text-right font-medium text-neutral-11">Default price</th>
@@ -68,6 +69,14 @@ export function ProductsClient({ items, userId }: { items: Item[]; userId: strin
             <tbody className="divide-y divide-neutral-6">
               {items.map((item) => (
                 <tr key={item.id} className="bg-surface hover:bg-neutral-2 transition-colors">
+                  <td className="px-4 py-3">
+                    {item.photo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.photo_url} alt={item.name} className="w-10 h-10 rounded-3 object-cover bg-neutral-3" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-3 bg-neutral-3" />
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-neutral-12 font-medium">{item.name}</td>
                   <td className="px-4 py-3 text-neutral-11">{item.description ?? "—"}</td>
                   <td className="px-4 py-3 text-right text-neutral-12">

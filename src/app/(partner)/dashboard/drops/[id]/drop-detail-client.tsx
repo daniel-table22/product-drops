@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast } from "./actions";
+import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
 
 type Drop = Tables<"drops">;
 type DropItem = Tables<"drop_items"> & { item: Tables<"items"> };
@@ -30,13 +30,21 @@ interface Props {
   isStripeReady: boolean;
   partnerSlug: string;
   subscriberCount: number;
+  businessName: string;
 }
 
-export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount }: Props) {
+export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName }: Props) {
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);
+  const [blastAIPending, setBlastAIPending] = useState(false);
+
+  const defaultSocial = dropItems.length > 0
+    ? `New drop: ${drop.name} ✨\n\n${dropItems.map((di) => `${di.item.name} — $${(di.price_cents / 100).toFixed(2)}`).join("\n")}\n\nLink in bio to order 🔗`
+    : `New drop: ${drop.name} ✨\n\nLink in bio to order 🔗`;
+  const [socialMessage, setSocialMessage] = useState(defaultSocial);
+  const [socialAIPending, setSocialAIPending] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(libraryItems[0]?.id ?? "");
   const [itemPrice, setItemPrice] = useState("");
   const [itemQty, setItemQty] = useState("");
@@ -131,7 +139,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
           <TabsTrigger value="pack-list">Pack list</TabsTrigger>
           <TabsTrigger value="prep-list">Prep list</TabsTrigger>
-          <TabsTrigger value="notify">Notify ({subscriberCount})</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -151,6 +158,106 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 {new Date(drop.pickup_window_ends_at).toLocaleString()}
               </p>
             </div>
+          </div>
+
+          {/* ── SMS blast composer ── */}
+          <div className="space-y-3 max-w-xl">
+            <div>
+              <h2 className="text-size-3 font-medium text-neutral-12">SMS blast</h2>
+              <p className="text-size-1 text-neutral-10 mt-0.5">Sent to {subscriberCount} opted-in subscriber{subscriberCount !== 1 ? "s" : ""}</p>
+            </div>
+            <textarea
+              value={blastMessage}
+              onChange={(e) => setBlastMessage(e.target.value)}
+              rows={3}
+              maxLength={320}
+              placeholder={`Hey! ${drop.name} is now open for orders →`}
+              className="w-full rounded-3 border border-neutral-6 bg-transparent px-3 py-2 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8 resize-none"
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-size-1 text-neutral-10">{blastMessage.length}/320</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm" variant="outline"
+                  disabled={blastAIPending || !blastMessage.trim()}
+                  onClick={async () => {
+                    setBlastAIPending(true);
+                    const result = await rewriteWithAI(blastMessage, { dropName: drop.name, businessName, type: "sms" });
+                    if ("text" in result) setBlastMessage(result.text);
+                    setBlastAIPending(false);
+                  }}
+                >
+                  {blastAIPending ? "Rewriting…" : "✦ Rewrite with AI"}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={blastPending || !blastMessage.trim() || subscriberCount === 0}
+                  onClick={async () => {
+                    setBlastPending(true);
+                    setBlastResult(null);
+                    const result = await sendBlast(drop.id, blastMessage);
+                    setBlastResult(result as { sent: number });
+                    setBlastPending(false);
+                  }}
+                >
+                  {blastPending ? "Sending…" : `Send to ${subscriberCount}`}
+                </Button>
+              </div>
+            </div>
+            {blastResult && (
+              <p className="text-size-2 text-accent-11 font-medium">Sent to {blastResult.sent} subscriber{blastResult.sent !== 1 ? "s" : ""}.</p>
+            )}
+          </div>
+
+          {/* ── Social media composer ── */}
+          <div className="space-y-3 max-w-xl">
+            <div>
+              <h2 className="text-size-3 font-medium text-neutral-12">Social media</h2>
+              <p className="text-size-1 text-neutral-10 mt-0.5">Copy this caption to Instagram, copy photos from below</p>
+            </div>
+            <textarea
+              value={socialMessage}
+              onChange={(e) => setSocialMessage(e.target.value)}
+              rows={5}
+              className="w-full rounded-3 border border-neutral-6 bg-transparent px-3 py-2 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8 resize-none"
+            />
+            <div className="flex items-center justify-between">
+              <Button
+                size="sm" variant="outline"
+                disabled={socialAIPending || !socialMessage.trim()}
+                onClick={async () => {
+                  setSocialAIPending(true);
+                  const result = await rewriteWithAI(socialMessage, { dropName: drop.name, businessName, type: "social" });
+                  if ("text" in result) setSocialMessage(result.text);
+                  setSocialAIPending(false);
+                }}
+              >
+                {socialAIPending ? "Rewriting…" : "✦ Rewrite with AI"}
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                onClick={() => navigator.clipboard.writeText(socialMessage)}
+              >
+                Copy caption
+              </Button>
+            </div>
+            {dropItems.filter((di) => di.item.photo_url).length > 0 && (
+              <div className="flex gap-3 flex-wrap">
+                {dropItems.filter((di) => di.item.photo_url).map((di) => (
+                  <a key={di.id} href={di.item.photo_url!} download target="_blank" rel="noopener noreferrer" className="group relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={di.item.photo_url!}
+                      alt={di.item.name}
+                      className="w-20 h-20 rounded-3 object-cover border border-neutral-6 group-hover:opacity-80 transition-opacity"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-size-1 font-medium bg-black/30 rounded-3">
+                      Download
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -337,48 +444,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           >
             Print
           </button>
-        </TabsContent>
-        {/* ── Notify ── */}
-        <TabsContent value="notify" className="pt-2 space-y-4 max-w-lg">
-          <p className="text-size-2 text-neutral-10">
-            Send an SMS to all {subscriberCount} opted-in subscriber{subscriberCount !== 1 ? "s" : ""}.
-          </p>
-          {subscriberCount === 0 ? (
-            <p className="text-size-2 text-neutral-10">No subscribers yet — share your storefront link to grow your list.</p>
-          ) : (
-            <div className="space-y-3">
-              <textarea
-                value={blastMessage}
-                onChange={(e) => setBlastMessage(e.target.value)}
-                rows={4}
-                maxLength={320}
-                placeholder={`Hey! ${drop.name} is open for orders. Check it out →`}
-                className="w-full rounded-3 border border-neutral-6 bg-transparent px-3 py-2 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8 resize-none"
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-size-1 text-neutral-10">{blastMessage.length}/320</span>
-                <Button
-                  size="sm"
-                  disabled={blastPending || !blastMessage.trim()}
-                  onClick={async () => {
-                    setBlastPending(true);
-                    setBlastResult(null);
-                    const result = await sendBlast(drop.id, blastMessage);
-                    setBlastResult(result as { sent: number });
-                    setBlastPending(false);
-                    setBlastMessage("");
-                  }}
-                >
-                  {blastPending ? "Sending…" : `Send to ${subscriberCount}`}
-                </Button>
-              </div>
-              {blastResult && (
-                <p className="text-size-2 text-accent-11 font-medium">
-                  Sent to {blastResult.sent} subscriber{blastResult.sent !== 1 ? "s" : ""}.
-                </p>
-              )}
-            </div>
-          )}
         </TabsContent>
       </Tabs>
 

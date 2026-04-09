@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { twilioClient, TWILIO_PHONE } from "@/lib/twilio/client";
+import { anthropic } from "@/lib/anthropic/client";
 import type { Database } from "@/types/database";
 
 type OrderState = Database["public"]["Enums"]["order_state"];
@@ -115,6 +116,29 @@ export async function sendBlast(dropId: string, message: string) {
   const sent = results.filter((r) => r.status === "fulfilled").length;
   revalidatePath(`/dashboard/drops/${dropId}`);
   return { sent };
+}
+
+export async function rewriteWithAI(
+  text: string,
+  context: { dropName: string; businessName: string; type: "sms" | "social" }
+) {
+  const systemPrompts = {
+    sms: "You are a copywriter helping small food businesses send SMS blasts to their subscribers. Write concise, warm, direct messages under 160 characters. No hashtags. End with a call to action.",
+    social: "You are a copywriter helping small food businesses craft Instagram captions. Write warm, evocative, community-focused captions. Use 2–4 relevant emojis and 3–5 hashtags at the end.",
+  };
+
+  const userPrompt = `Business: ${context.businessName}\nDrop: ${context.dropName}\n\nRewrite or improve this message:\n\n"${text}"`;
+
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 300,
+    system: systemPrompts[context.type],
+    messages: [{ role: "user", content: userPrompt }],
+  });
+
+  const content = message.content[0];
+  if (content.type !== "text") return { error: "Unexpected response" };
+  return { text: content.text.trim() };
 }
 
 export async function addDropItem(
