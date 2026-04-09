@@ -54,9 +54,13 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
     : `New drop: ${drop.name} ✨\n\nLink in bio to order 🔗`;
   const [socialMessage, setSocialMessage] = useState(defaultSocial);
   const [socialAIPending, setSocialAIPending] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState(libraryItems[0]?.id ?? "");
-  const [itemPrice, setItemPrice] = useState("");
-  const [itemQty, setItemQty] = useState("");
+  // Per-item price/qty state for the add-items dialog
+  const [itemPrices, setItemPrices] = useState<Record<string, string>>(() =>
+    Object.fromEntries(libraryItems.map((i) => [i.id, (i.default_price_cents / 100).toFixed(2)]))
+  );
+  const [itemQtys, setItemQtys] = useState<Record<string, string>>(() =>
+    Object.fromEntries(libraryItems.map((i) => [i.id, "0"]))
+  );
 
   const canPublish = isStripeReady && drop.state === "scheduled";
 
@@ -75,12 +79,14 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
 
   async function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
-    const priceCents = Math.round(parseFloat(itemPrice) * 100);
-    const qty = parseInt(itemQty, 10);
-    await addDropItem(drop.id, selectedItemId, priceCents, qty);
+    const toAdd = libraryItems.filter((i) => parseInt(itemQtys[i.id] ?? "0", 10) > 0);
+    for (const item of toAdd) {
+      const priceCents = Math.round(parseFloat(itemPrices[item.id] ?? "0") * 100);
+      const qty = parseInt(itemQtys[item.id], 10);
+      await addDropItem(drop.id, item.id, priceCents, qty);
+    }
     setAddItemOpen(false);
-    setItemPrice("");
-    setItemQty("");
+    setItemQtys(Object.fromEntries(libraryItems.map((i) => [i.id, "0"])));
   }
 
   async function handleRemoveItem(dropItemId: string) {
@@ -91,12 +97,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
     await updateOrderState(orderId, drop.id, newState);
   }
 
-  // Pre-select price when item changes
-  function handleItemSelect(itemId: string) {
-    setSelectedItemId(itemId);
-    const item = libraryItems.find((i) => i.id === itemId);
-    if (item) setItemPrice((item.default_price_cents / 100).toFixed(2));
-  }
 
   return (
     <div className="px-8 py-10 space-y-6">
@@ -471,57 +471,67 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
       </Tabs>
 
       {/* Add item dialog */}
-      <Dialog open={addItemOpen} onOpenChange={setAddItemOpen}>
-        <DialogContent>
+      <Dialog open={addItemOpen} onOpenChange={(open) => {
+        setAddItemOpen(open);
+        if (!open) setItemQtys(Object.fromEntries(libraryItems.map((i) => [i.id, "0"])));
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add item to drop</DialogTitle>
+            <DialogTitle>Add items to drop</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddItem} className="mt-4 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="item-select">Product</Label>
-              <select
-                id="item-select"
-                value={selectedItemId}
-                onChange={(e) => handleItemSelect(e.target.value)}
-                className="w-full h-9 rounded-3 border border-neutral-7 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-2 focus:outline-accent-8"
-                required
-              >
-                {libraryItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="item-price">Price for this drop ($)</Label>
-              <Input
-                id="item-price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={itemPrice}
-                onChange={(e) => setItemPrice(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="item-qty">Quantity available</Label>
-              <Input
-                id="item-qty"
-                type="number"
-                min="1"
-                step="1"
-                value={itemQty}
-                onChange={(e) => setItemQty(e.target.value)}
-                required
-              />
+          <form onSubmit={handleAddItem} className="mt-2 space-y-4">
+            <div className="border border-neutral-6 rounded-3 overflow-hidden">
+              <table className="w-full text-size-2">
+                <thead className="bg-neutral-2 border-b border-neutral-6">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-11">Item</th>
+                    <th className="px-3 py-2 text-right font-medium text-neutral-11 w-24">Price ($)</th>
+                    <th className="px-3 py-2 text-right font-medium text-neutral-11 w-20">Qty</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-6">
+                  {libraryItems.map((item) => {
+                    const qty = parseInt(itemQtys[item.id] ?? "0", 10);
+                    return (
+                      <tr key={item.id} className={qty > 0 ? "bg-accent-2" : "bg-surface"}>
+                        <td className="px-3 py-2 text-neutral-12">{item.name}</td>
+                        <td className="px-3 py-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={itemPrices[item.id] ?? ""}
+                            onChange={(e) => setItemPrices((p) => ({ ...p, [item.id]: e.target.value }))}
+                            className="h-7 text-right text-size-2 w-full"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={itemQtys[item.id] ?? "0"}
+                            onChange={(e) => setItemQtys((q) => ({ ...q, [item.id]: e.target.value }))}
+                            className="h-7 text-right text-size-2 w-full"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline" size="sm">Cancel</Button>
               </DialogClose>
-              <Button type="submit" size="sm">Add item</Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!libraryItems.some((i) => parseInt(itemQtys[i.id] ?? "0", 10) > 0)}
+              >
+                Add items
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
