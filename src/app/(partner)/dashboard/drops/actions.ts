@@ -14,7 +14,10 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export async function createDrop(formData: FormData) {
+export async function createDrop(
+  _prevState: { error: string } | null,
+  formData: FormData
+): Promise<{ error: string } | null> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -36,6 +39,17 @@ export async function createDrop(formData: FormData) {
   const pickup_window_starts_at = formData.get("pickup_window_starts_at") as string;
   const pickup_window_ends_at = formData.get("pickup_window_ends_at") as string;
 
+  if (!name?.trim()) return { error: "Drop name is required." };
+  if (!order_window_starts_at || !order_window_ends_at) return { error: "Order window dates are required." };
+  if (!pickup_window_starts_at || !pickup_window_ends_at) return { error: "Pickup window dates are required." };
+
+  if (new Date(order_window_ends_at) <= new Date(order_window_starts_at)) {
+    return { error: "Order window end must be after its start." };
+  }
+  if (new Date(pickup_window_ends_at) <= new Date(pickup_window_starts_at)) {
+    return { error: "Pickup window end must be after its start." };
+  }
+
   const baseSlug = slugify(name);
   const slug = `${baseSlug}-${Date.now()}`;
 
@@ -55,7 +69,9 @@ export async function createDrop(formData: FormData) {
     .select("id")
     .single();
 
-  if (error || !drop) redirect("/dashboard/drops");
+  if (error || !drop) {
+    return { error: error?.message ?? "Could not create drop. Please try again." };
+  }
 
   revalidatePath("/dashboard/drops");
   redirect(`/dashboard/drops/${drop.id}`);
