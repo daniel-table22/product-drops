@@ -368,7 +368,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                   onClick={async () => {
                     setBlastAIPending(true);
                     const result = await rewriteWithAI(blastMessage, { dropName: drop.name, businessName, type: "sms" });
-                    if ("text" in result) setBlastMessage(result.text);
+                    if ("text" in result && result.text) setBlastMessage(result.text);
                     setBlastAIPending(false);
                   }}>
                   {blastAIPending ? "Rewriting…" : "✦ Rewrite with AI"}
@@ -406,7 +406,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 onClick={async () => {
                   setSocialAIPending(true);
                   const result = await rewriteWithAI(socialMessage, { dropName: drop.name, businessName, type: "social" });
-                  if ("text" in result) setSocialMessage(result.text);
+                  if ("text" in result && result.text) setSocialMessage(result.text);
                   setSocialAIPending(false);
                 }}>
                 {socialAIPending ? "Rewriting…" : "✦ Rewrite with AI"}

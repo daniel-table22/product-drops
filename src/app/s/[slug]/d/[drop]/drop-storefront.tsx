@@ -1,16 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { createCheckoutSession } from "./actions";
+import { CheckoutFooter } from "./checkout-footer";
 import { ThemeListener } from "@/components/theme-listener";
 import type { Database } from "@/types/database";
 
@@ -46,6 +38,7 @@ interface Props {
     fg_color: string;
     accent_color: string;
     font_style: string;
+    stripe_account_id: string;
   };
   items: DropItem[];
 }
@@ -80,9 +73,6 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
 
   const [cart, setCart] = useState<Record<string, number>>({});
   const [activeIndex, setActiveIndex] = useState(0);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const ordersOpen = drop.state === "orders_open";
@@ -133,21 +123,6 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
 
   function scrollToCard(i: number) {
     carouselRef.current?.scrollTo({ left: i * carouselRef.current.offsetWidth, behavior: "smooth" });
-  }
-
-  async function handleCheckout(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    const formData = new FormData(e.currentTarget);
-    formData.set("cart", JSON.stringify(cartLines));
-    startTransition(async () => {
-      const result = await createCheckoutSession(formData);
-      if ("error" in result) {
-        setError(result.error);
-      } else {
-        window.location.href = result.url;
-      }
-    });
   }
 
   const pickupDate = new Date(drop.pickup_window_starts_at).toLocaleDateString("en-US", {
@@ -373,77 +348,13 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
 
       </div>
 
-      {/* Docked footer */}
-      {ordersOpen && (
-        <div
-          data-name="docked footer"
-          className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e0e1e6] px-6 pt-4 pb-12 transition-transform duration-300 ease-out"
-          style={{ transform: cartCount > 0 ? "translateY(0)" : "translateY(110%)" }}
-        >
-          <button
-            type="button"
-            onClick={() => setCheckoutOpen(true)}
-            className="w-full bg-black text-white text-xl font-medium py-4 flex items-center justify-center gap-2"
-          >
-            <span>Checkout</span>
-            <span>${(subtotalCents / 100).toFixed(2)}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Checkout dialog */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete your order</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCheckout} className="space-y-4 mt-2">
-            <input type="hidden" name="drop_id" value={drop.id} />
-            <input type="hidden" name="partner_slug" value={partner.slug} />
-            <input type="hidden" name="drop_slug" value={drop.slug} />
-
-            <div className="space-y-1.5">
-              <Label htmlFor="customer_name">Name</Label>
-              <Input id="customer_name" name="customer_name" required placeholder="Your name" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="customer_email">Email</Label>
-              <Input id="customer_email" name="customer_email" type="email" required placeholder="you@example.com" />
-            </div>
-
-            {preloadedPhone ? (
-              <>
-                <input type="hidden" name="customer_phone" value={preloadedPhone} />
-                <p className="text-sm text-neutral-10">Sending confirmation to {preloadedPhone}</p>
-              </>
-            ) : (
-              <div className="space-y-1.5">
-                <Label htmlFor="customer_phone">
-                  Phone <span className="font-normal text-neutral-10">(optional)</span>
-                </Label>
-                <Input id="customer_phone" name="customer_phone" type="tel" placeholder="+1 555 000 0000" />
-              </div>
-            )}
-
-            <div className="flex justify-between text-sm bg-neutral-2 rounded-3 px-3 py-2">
-              <span className="text-neutral-11">{cartCount} item{cartCount !== 1 ? "s" : ""}</span>
-              <span className="font-semibold text-neutral-12">${(subtotalCents / 100).toFixed(2)}</span>
-            </div>
-
-            {error && (
-              <p className="text-sm text-error-11 rounded-3 border border-error-6 bg-error-2 px-3 py-2">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full bg-black text-white py-3 font-medium rounded-sm disabled:opacity-60"
-            >
-              {isPending ? "Redirecting…" : `Pay $${(subtotalCents / 100).toFixed(2)}`}
-            </button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CheckoutFooter
+        drop={{ id: drop.id, slug: drop.slug, state: drop.state, order_window_ends_at: drop.order_window_ends_at }}
+        partner={{ slug: partner.slug, stripe_account_id: partner.stripe_account_id }}
+        cartLines={cartLines}
+        subtotalCents={subtotalCents}
+        onCheckoutOpen={() => {}}
+      />
     </div>
   );
 }

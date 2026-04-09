@@ -58,6 +58,7 @@ export type Database = {
       }
       drops: {
         Row: {
+          blast_count: number
           cancelled_at: string | null
           created_at: string
           description: string | null
@@ -74,6 +75,7 @@ export type Database = {
           state: Database["public"]["Enums"]["drop_state"]
         }
         Insert: {
+          blast_count?: number
           cancelled_at?: string | null
           created_at?: string
           description?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           state?: Database["public"]["Enums"]["drop_state"]
         }
         Update: {
+          blast_count?: number
           cancelled_at?: string | null
           created_at?: string
           description?: string | null

@@ -69,6 +69,7 @@ export default async function DropPreviewPage({
         fg_color: partner.fg_color ?? "#000000",
         accent_color: partner.accent_color ?? "#501b00",
         font_style: partner.font_style ?? "sans",
+        stripe_account_id: "",
       }}
       items={DUMMY_ITEMS}
       autoPlay

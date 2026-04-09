@@ -53,7 +53,7 @@ export default async function DropDetailPage({
 
   const { data: partner } = await supabase
     .from("partners")
-    .select("id, business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style")
+    .select("id, business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style, stripe_account_id")
     .eq("slug", slug)
     .single();
 
@@ -104,6 +104,7 @@ export default async function DropDetailPage({
         fg_color: partner.fg_color ?? "#000000",
         accent_color: partner.accent_color ?? "#501b00",
         font_style: partner.font_style ?? "sans",
+        stripe_account_id: partner.stripe_account_id ?? "",
       }}
       items={items}
     />

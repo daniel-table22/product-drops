@@ -20,9 +20,6 @@ export async function createCheckoutSession(
   const drop_id = formData.get("drop_id") as string;
   const partner_slug = formData.get("partner_slug") as string;
   const drop_slug = formData.get("drop_slug") as string;
-  const customer_name = formData.get("customer_name") as string;
-  const customer_email = formData.get("customer_email") as string;
-  const customer_phone = (formData.get("customer_phone") as string) || "";
   const cartRaw = formData.get("cart") as string;
 
   let cart: CartLine[];
@@ -102,7 +99,7 @@ export async function createCheckoutSession(
     .from("pending_orders")
     .insert({
       drop_id,
-      customer_email,
+      customer_email: "",
       stripe_session_id: "placeholder", // will update after session creation
       line_items: cartLines,
       reserved_until,
@@ -119,12 +116,13 @@ export async function createCheckoutSession(
 
   const platformFee = Math.max(1, Math.round(subtotalCents * 0.001)); // 0.1%, min $0.01
 
-  // Create Stripe Checkout session
+  // Create Stripe Checkout session — collect name/email/phone on Stripe's page
   let session;
   try {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
-      customer_email,
+      billing_address_collection: "required",
+      phone_number_collection: { enabled: true },
       line_items: cartLines.map((l) => ({
         price_data: {
           currency: "usd",
@@ -140,8 +138,6 @@ export async function createCheckoutSession(
       metadata: {
         pending_order_id: pendingOrder.id,
         drop_id,
-        customer_name,
-        customer_phone,
       },
       success_url: `${appUrl}/s/${partner_slug}/d/${drop_slug}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/s/${partner_slug}/d/${drop_slug}`,
@@ -159,4 +155,108 @@ export async function createCheckoutSession(
     .eq("id", pendingOrder.id);
 
   return { url: session.url! };
+}
+
+// ── Apple Pay / Google Pay path ───────────────────────────────────────────────
+
+interface CreatePaymentIntentParams {
+  dropId: string;
+  cartLines: CartLine[];
+  subtotalCents: number;
+  partnerStripeAccountId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+export async function createPaymentIntent(
+  params: CreatePaymentIntentParams
+): Promise<{ clientSecret: string; paymentIntentId: string; pendingOrderId: string } | { error: string }> {
+  const { dropId, cartLines, subtotalCents, partnerStripeAccountId, customerName, customerEmail, customerPhone } = params;
+  const serviceClient = createServiceClient();
+  const supabase = await createClient();
+
+  const { data: drop } = await supabase
+    .from("drops")
+    .select("id, state, order_window_ends_at")
+    .eq("id", dropId)
+    .single();
+
+  if (!drop || drop.state !== "orders_open") {
+    return { error: "This drop is no longer accepting orders." };
+  }
+
+  // Decrement inventory
+  for (const line of cartLines) {
+    const { data: dropItem } = await serviceClient
+      .from("drop_items")
+      .select("available_qty")
+      .eq("id", line.drop_item_id)
+      .single();
+
+    if (!dropItem || dropItem.available_qty < line.qty) {
+      return { error: `"${line.item_name}" doesn't have enough inventory.` };
+    }
+
+    const { error } = await serviceClient
+      .from("drop_items")
+      .update({ available_qty: dropItem.available_qty - line.qty })
+      .eq("id", line.drop_item_id)
+      .eq("available_qty", dropItem.available_qty);
+
+    if (error) {
+      return { error: `Could not reserve "${line.item_name}". Please try again.` };
+    }
+  }
+
+  const platformFee = Math.max(1, Math.round(subtotalCents * 0.001));
+
+  // Create pending order
+  const { data: pendingOrder, error: pendingErr } = await serviceClient
+    .from("pending_orders")
+    .insert({
+      drop_id: dropId,
+      customer_email: customerEmail,
+      stripe_session_id: "payment_intent_pending",
+      line_items: cartLines,
+      reserved_until: drop.order_window_ends_at,
+    })
+    .select("id")
+    .single();
+
+  if (pendingErr || !pendingOrder) {
+    return { error: "Could not create your order. Please try again." };
+  }
+
+  // Create PaymentIntent
+  let intent;
+  try {
+    intent = await stripe.paymentIntents.create({
+      amount: subtotalCents,
+      currency: "usd",
+      application_fee_amount: platformFee,
+      transfer_data: { destination: partnerStripeAccountId },
+      metadata: {
+        pending_order_id: pendingOrder.id,
+        drop_id: dropId,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+      },
+    });
+  } catch {
+    await serviceClient.from("pending_orders").delete().eq("id", pendingOrder.id);
+    return { error: "Payment setup failed. Please try again." };
+  }
+
+  await serviceClient
+    .from("pending_orders")
+    .update({ stripe_session_id: intent.id })
+    .eq("id", pendingOrder.id);
+
+  return {
+    clientSecret: intent.client_secret!,
+    paymentIntentId: intent.id,
+    pendingOrderId: pendingOrder.id,
+  };
 }
