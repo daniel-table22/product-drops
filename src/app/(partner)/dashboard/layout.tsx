@@ -34,7 +34,7 @@ export default async function DashboardLayout({
         partnerSlug={partner?.slug ?? ""}
         activeDrops={(activeDrops ?? []).map((d) => ({ id: d.id, name: d.name, slug: d.slug }))}
       />
-      <main className="flex-1 bg-page-bg">{children}</main>
+      <main className="flex-1 bg-white">{children}</main>
     </div>
   );
 }
