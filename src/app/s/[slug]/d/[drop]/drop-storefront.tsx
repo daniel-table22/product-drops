@@ -374,10 +374,11 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
       </div>
 
       {/* Docked footer */}
-      {ordersOpen && cartCount > 0 && (
+      {ordersOpen && (
         <div
           data-name="docked footer"
-          className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e0e1e6] px-6 pt-4 pb-12"
+          className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e0e1e6] px-6 pt-4 pb-12 transition-transform duration-300 ease-out"
+          style={{ transform: cartCount > 0 ? "translateY(0)" : "translateY(110%)" }}
         >
           <button
             type="button"
