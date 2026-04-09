@@ -89,7 +89,7 @@ export default async function DropsPage() {
                           Visit ↗
                         </a>
                       </Button>
-                      <DeleteDropButton id={drop.id} name={drop.name} />
+                      <DeleteDropButton id={drop.id} name={drop.name} state={drop.state} />
                     </div>
                   </td>
                 </tr>
