@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OrderStateBadge } from "@/components/state-badge";
+import { PageHeader } from "@/components/page-header";
 
 export default async function OrdersPage({
   searchParams,
@@ -46,7 +47,7 @@ export default async function OrdersPage({
   return (
     <div className="px-8 py-10 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">Orders</h1>
+        <PageHeader title="Orders" />
         <p className="text-size-2 text-neutral-10">{orders?.length ?? 0} orders</p>
       </div>
 

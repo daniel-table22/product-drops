@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/image-upload";
@@ -46,7 +47,7 @@ export default async function EditDropPage({
         <Button asChild variant="ghost" size="sm">
           <a href={`/dashboard/drops/${id}`}>← Back</a>
         </Button>
-        <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">Edit drop</h1>
+        <PageHeader title="Edit drop" />
       </div>
 
       <form action={updateDropWithId} className="space-y-6">

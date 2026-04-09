@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { DropStateBadge } from "@/components/state-badge";
 import { DeleteDropButton } from "./delete-drop-button";
 
@@ -26,12 +27,7 @@ export default async function DropsPage() {
 
   return (
     <div className="px-8 py-10 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">Drops</h1>
-        <Button asChild size="sm">
-          <a href="/dashboard/drops/new">New drop</a>
-        </Button>
-      </div>
+      <PageHeader title="Drops" actions={<Button asChild size="sm"><a href="/dashboard/drops/new">New drop</a></Button>} />
 
       {!drops || drops.length === 0 ? (
         <p className="text-size-2 text-neutral-10">No drops yet. Create your first drop to get started.</p>

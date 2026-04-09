@@ -153,6 +153,7 @@
   /* --- Fonts --- */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: "Quadrant Text 201218", Georgia, "Times New Roman", serif;
 }
 
 /* ============================================================

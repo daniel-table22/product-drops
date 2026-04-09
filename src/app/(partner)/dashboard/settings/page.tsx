@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { Separator } from "@/components/ui/separator";
 
 export default async function SettingsPage() {
@@ -21,7 +22,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="px-8 py-10 max-w-2xl space-y-10">
-      <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">Settings</h1>
+      <PageHeader title="Settings" />
 
       <section className="space-y-4">
         <h2 className="text-size-4 font-medium text-neutral-12">Account</h2>

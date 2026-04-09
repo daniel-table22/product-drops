@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -55,9 +56,7 @@ export default async function DashboardPage() {
   return (
     <div className="px-8 py-10 space-y-8">
       <div>
-        <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">
-          {partner.business_name}
-        </h1>
+        <PageHeader title="Dashboard" />
         <p className="mt-1 text-size-2 text-neutral-10">Overview</p>
       </div>
 

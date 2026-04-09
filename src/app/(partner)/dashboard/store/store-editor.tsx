@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -60,7 +61,7 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
     <div className="flex gap-10 px-8 py-10 min-h-0">
       {/* Left: form */}
       <div className="w-[510px] shrink-0 space-y-8">
-        <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">Store</h1>
+        <PageHeader title="Store" />
 
         <form action={updateStore} className="space-y-6">
           <div className="space-y-4">

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/page-header";
 
 export default async function CustomersPage() {
   const supabase = await createClient();
@@ -60,7 +61,7 @@ export default async function CustomersPage() {
   return (
     <div className="px-8 py-10 space-y-6">
       <div>
-        <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">Customers</h1>
+        <PageHeader title="Customers" />
         <p className="mt-1 text-size-2 text-neutral-10">{customers.length} unique customers from orders</p>
       </div>
 
