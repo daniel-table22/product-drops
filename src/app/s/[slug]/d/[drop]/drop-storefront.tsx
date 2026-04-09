@@ -136,7 +136,7 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
   return (
     <div
       data-theme-root
-      className="min-h-screen pb-36"
+      className="min-h-screen pb-10"
       style={{
         backgroundColor: partner.bg_color,
         color: partner.fg_color,
@@ -342,40 +342,15 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
               ))}
             </div>
           )}
+
+          <CheckoutFooter
+            drop={{ id: drop.id, slug: drop.slug, state: drop.state, order_window_ends_at: drop.order_window_ends_at }}
+            partner={{ slug: partner.slug, stripe_account_id: partner.stripe_account_id }}
+            cartLines={cartLines}
+            subtotalCents={subtotalCents}
+          />
         </div>
       )}
-
-      {/* How it works */}
-      <div className="max-w-sm mx-auto px-5">
-        <div data-name="How it works" className="flex flex-col gap-8 pt-8">
-          <p className="text-lg font-semibold text-center">Here's how it works</p>
-          <div className="flex flex-col gap-8">
-            {[
-              { img: "/step-1.png", text: ["We text you when there's a drop.", "One message per batch. Nothing else."] },
-              { img: "/step-2.png", text: ["You order before it's gone.", "Small batches sell out fast."] },
-              { img: "/step-3.png", text: ["You pick it up fresh.", `📍 ${partner.pickup_address}`] },
-            ].map((step, i) => (
-              <div key={i} data-name="step" className="flex flex-col items-center gap-4">
-                <div data-name="image slot" className="flex items-start max-h-36 overflow-clip p-2.5">
-                  <img src={step.img} alt={`Step ${i + 1}`} className="h-36 w-auto object-contain mix-blend-multiply" />
-                </div>
-                <div data-name="description" className="text-center">
-                  {step.text.map((line, j) => (
-                    <p key={j} className="text-base opacity-60 leading-relaxed">{line}</p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <CheckoutFooter
-        drop={{ id: drop.id, slug: drop.slug, state: drop.state, order_window_ends_at: drop.order_window_ends_at }}
-        partner={{ slug: partner.slug, stripe_account_id: partner.stripe_account_id }}
-        cartLines={cartLines}
-        subtotalCents={subtotalCents}
-      />
     </div>
   );
 }

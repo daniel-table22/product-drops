@@ -138,11 +138,10 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
 
   const visible = drop.state === "orders_open" && cartCount > 0;
 
+  if (!visible) return null;
+
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e0e1e6] px-6 pt-4 pb-12 transition-transform duration-300 ease-out"
-      style={{ transform: visible ? "translateY(0)" : "translateY(110%)" }}
-    >
+    <div className="px-5 pt-4 pb-2 flex flex-col gap-2">
       {(applePayError || cardError) && (
         <p className="text-xs text-red-600 text-center mb-2">{applePayError ?? cardError}</p>
       )}
