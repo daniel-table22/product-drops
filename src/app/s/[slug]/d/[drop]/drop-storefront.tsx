@@ -83,7 +83,7 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
     const id = setInterval(() => {
       setActiveIndex((prev) => {
         const next = (prev + 1) % items.length;
-        carouselRef.current?.scrollTo({ left: next * (carouselRef.current.offsetWidth * 0.9 + 12), behavior: "smooth" });
+        carouselRef.current?.scrollTo({ left: next * (carouselRef.current.offsetWidth * 0.82 + 12), behavior: "smooth" });
         return next;
       });
     }, 2200);
@@ -117,15 +117,15 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
   function handleCarouselScroll() {
     const el = carouselRef.current;
     if (!el) return;
-    // Each card is 90vw wide + 12px gap; snap offset starts at 5vw
-    const cardWidth = el.offsetWidth * 0.9 + 12;
+    // Each card is 82vw wide + 12px gap; snap offset starts at 5vw
+    const cardWidth = el.offsetWidth * 0.82 + 12;
     setActiveIndex(Math.round((el.scrollLeft) / cardWidth));
   }
 
   function scrollToCard(i: number) {
     const el = carouselRef.current;
     if (!el) return;
-    const cardWidth = el.offsetWidth * 0.9 + 12;
+    const cardWidth = el.offsetWidth * 0.82 + 12;
     el.scrollTo({ left: i * cardWidth, behavior: "smooth" });
   }
 
@@ -235,7 +235,7 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
                   data-name="Card"
                   className="flex-none snap-start bg-white rounded-[20px] p-4 flex flex-col gap-2.5"
                   style={{
-                    width: "90vw",
+                    width: "82vw",
                     boxShadow: "inset 0 0 0 1px rgba(0,0,85,0.06), inset 0 1.5px 2px rgba(0,0,0,0.06)",
                   }}
                 >
