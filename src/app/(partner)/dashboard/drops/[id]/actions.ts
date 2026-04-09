@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { twilioClient, TWILIO_PHONE } from "@/lib/twilio/client";
 import { anthropic } from "@/lib/anthropic/client";
 import type { Database } from "@/types/database";
@@ -177,10 +178,12 @@ const FAKE_CUSTOMERS = [
 ];
 
 export async function seedOrders(dropId: string, mode: "full" | "partial") {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const authClient = await createClient();
+  const { data: { user } } = await authClient.auth.getUser();
   if (!user) redirect("/login");
+
+  // Use service client for writes — order_items RLS only allows service role inserts
+  const supabase = createServiceClient();
 
   // Fetch drop items with names
   const { data: rawItems } = await supabase
