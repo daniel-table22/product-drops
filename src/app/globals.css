@@ -3,10 +3,33 @@
 @import "@radix-ui/colors/green-alpha.css";
 @import "@radix-ui/colors/green-dark.css";
 @import "@radix-ui/colors/green-dark-alpha.css";
-@import "@radix-ui/colors/slate.css";
-@import "@radix-ui/colors/slate-alpha.css";
-@import "@radix-ui/colors/slate-dark.css";
-@import "@radix-ui/colors/slate-dark-alpha.css";
+/* Custom Slate scale from design tokens — overrides Radix defaults */
+:root {
+  --slate-1: #FAFAF0;
+  --slate-2: #F8F8F4;
+  --slate-3: #EEEEE4;
+  --slate-4: #E8E8EC;
+  --slate-5: #E0E1E6;
+  --slate-6: #D4D4CA;
+  --slate-7: #CDCED6;
+  --slate-8: #B9BBC6;
+  --slate-9: #878A87;
+  --slate-10: #80838D;
+  --slate-11: #60646C;
+  --slate-12: #0F120F;
+  --slate-a1: rgba(0,0,85,0.01);
+  --slate-a2: rgba(0,0,85,0.02);
+  --slate-a3: rgba(0,0,51,0.06);
+  --slate-a4: rgba(0,0,45,0.09);
+  --slate-a5: rgba(0,9,50,0.12);
+  --slate-a6: rgba(0,0,47,0.15);
+  --slate-a7: rgba(0,6,46,0.20);
+  --slate-a8: rgba(0,8,48,0.27);
+  --slate-a9: rgba(0,5,29,0.45);
+  --slate-a10: rgba(0,7,27,0.50);
+  --slate-a11: rgba(0,7,20,0.62);
+  --slate-a12: rgba(0,5,9,0.89);
+}
 @import "@radix-ui/colors/red.css";
 @import "@radix-ui/colors/red-alpha.css";
 @import "@radix-ui/colors/red-dark.css";
