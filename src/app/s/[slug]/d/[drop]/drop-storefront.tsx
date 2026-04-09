@@ -188,20 +188,18 @@ export function DropStorefront({ drop, partner, items }: Props) {
                   </div>
 
                   {/* Right controls */}
-                  <div className="flex-1 flex flex-col">
-                    {/* Badge */}
-                    <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
-                      {soldOut ? "Sold out" : `${item.available_qty} left`}
-                    </span>
-
-                    {/* Price + qty indicator */}
-                    <div className="flex-1 flex flex-col justify-center py-3">
+                  <div className="flex-1 flex flex-col justify-between">
+                    {/* Top group: badge → price → x{qty} */}
+                    <div className="flex flex-col gap-2">
+                      <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
+                        {soldOut ? "Sold out" : `${item.available_qty} left`}
+                      </span>
                       <p className="font-mono text-[24px] text-[#242021] leading-[24px]">
                         ${(item.price_cents / 100).toFixed(2)}
                       </p>
                       {inCart && (
                         <p
-                          className="font-mono text-[24px] leading-[24px] mt-0.5"
+                          className="font-mono text-[24px] leading-[24px]"
                           style={{ color: "var(--color-accent)" }}
                         >
                           x{qty}
