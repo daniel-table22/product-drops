@@ -137,28 +137,28 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-3 pb-6"
+      className="fixed bottom-0 left-0 right-0 z-30 flex flex-col gap-[10px] px-6 pt-4 pb-[48px]"
       style={{ backgroundColor: "var(--color-bg, #faf9f6)", borderTop: "1px solid rgba(0,0,0,0.08)" }}
     >
       {/* Error */}
       {(applePayError || cardError) && (
-        <p className="text-xs text-red-600 text-center mb-2">{applePayError ?? cardError}</p>
+        <p className="text-xs text-red-600 text-center">{applePayError ?? cardError}</p>
       )}
 
       {/* Total */}
-      <p className="text-sm opacity-60 mb-3" style={{ color: "var(--color-fg, #000)" }}>
+      <p className="text-[21px] font-medium" style={{ color: "var(--color-fg, #000)" }}>
         Total ${(subtotalCents / 100).toFixed(2)}
       </p>
 
       {/* Buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-[10px]">
         {/* Pay by card */}
         <button
           type="button"
           onClick={handleManualCheckout}
           disabled={cardPending}
-          className="flex-1 h-[48px] rounded-[8px] border border-black/20 flex items-center justify-center text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-          style={{ color: "var(--color-fg, #000)" }}
+          className="flex-1 py-4 px-[10px] rounded-[8px] flex items-center justify-center text-[17px] font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          style={{ backgroundColor: "#242021" }}
         >
           {cardPending ? "Redirecting…" : "Pay by card"}
         </button>
@@ -175,7 +175,6 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
               ["--apple-pay-button-style" as string]: "black",
               ["--apple-pay-button-type" as string]: "plain",
               flex: "1",
-              height: "48px",
               borderRadius: "8px",
               opacity: applePayPending ? 0.35 : 1,
               cursor: applePayPending ? "not-allowed" : "pointer",
@@ -189,7 +188,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
             type="button"
             onClick={handleManualCheckout}
             disabled={cardPending}
-            className="flex-1 h-[48px] rounded-[8px] flex items-center justify-center text-sm font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-4 px-[10px] rounded-[8px] flex items-center justify-center text-[17px] font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#242021" }}
           >
             {cardPending ? "Redirecting…" : "Checkout"}
