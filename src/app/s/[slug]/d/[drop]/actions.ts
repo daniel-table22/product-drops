@@ -83,15 +83,7 @@ export async function createCheckoutSession(
     (sum, l) => sum + l.price_cents * l.qty,
     0
   );
-  const reserved_until = drop
-    ? (
-        await supabase
-          .from("drops")
-          .select("order_window_ends_at")
-          .eq("id", drop_id)
-          .single()
-      ).data?.order_window_ends_at ?? new Date().toISOString()
-    : new Date().toISOString();
+  const reserved_until = drop.order_window_ends_at;
 
   const { data: pendingOrder, error: pendingErr } = await serviceClient
     .from("pending_orders")
