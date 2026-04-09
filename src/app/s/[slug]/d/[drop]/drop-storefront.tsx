@@ -122,7 +122,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
       {/* Sticky header */}
       <div
-        className="sticky top-0 z-20 flex items-center justify-between px-5 py-3"
+        className="sticky top-0 z-20 flex items-center justify-center px-5 py-3"
         style={{ backgroundColor: partner.bg_color }}
       >
         {partner.logo_url ? (
@@ -159,7 +159,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
       {/* Item list — no card backgrounds, just stacked */}
       {items.length > 0 && (
-        <div className="mx-2 flex flex-col divide-y" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+        <div className="mx-2 flex flex-col">
           {items.map((item) => {
             const qty = cart[item.id] ?? 0;
             const soldOut = item.available_qty === 0;
