@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Tables, Database } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ interface Props {
 }
 
 export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName, userId }: Props) {
+  const router = useRouter();
   const updateDropWithId = updateDrop.bind(null, drop.id);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [addItemPending, setAddItemPending] = useState(false);
@@ -62,7 +64,8 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const formRef = useRef<HTMLFormElement>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [seedPending, setSeedPending] = useState(false);
+  const [seedPartialPending, setSeedPartialPending] = useState(false);
+  const [seedFullPending, setSeedFullPending] = useState(false);
   const [seedResult, setSeedResult] = useState<{ created: number } | null>(null);
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
@@ -344,23 +347,25 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           {/* Seed buttons — only shown before/during orders */}
           {(drop.state === "orders_open" || drop.state === "scheduled") && (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" disabled={seedPending}
+              <Button size="sm" variant="outline" disabled={seedPartialPending || seedFullPending}
                 onClick={async () => {
-                  setSeedPending(true); setSeedResult(null);
+                  setSeedPartialPending(true); setSeedResult(null);
                   const r = await seedOrders(drop.id, "partial");
                   if ("created" in r && r.created != null) setSeedResult({ created: r.created });
-                  setSeedPending(false);
+                  setSeedPartialPending(false);
+                  router.refresh();
                 }}>
-                {seedPending ? "Adding…" : "✦ Autofill partial"}
+                {seedPartialPending ? "Adding…" : "✦ Autofill partial"}
               </Button>
-              <Button size="sm" variant="outline" disabled={seedPending}
+              <Button size="sm" variant="outline" disabled={seedPartialPending || seedFullPending}
                 onClick={async () => {
-                  setSeedPending(true); setSeedResult(null);
+                  setSeedFullPending(true); setSeedResult(null);
                   const r = await seedOrders(drop.id, "full");
                   if ("created" in r && r.created != null) setSeedResult({ created: r.created });
-                  setSeedPending(false);
+                  setSeedFullPending(false);
+                  router.refresh();
                 }}>
-                {seedPending ? "Adding…" : "✦ Autofill all"}
+                {seedFullPending ? "Adding…" : "✦ Autofill all"}
               </Button>
               {seedResult && (
                 <p className="text-size-1 text-neutral-10">{seedResult.created} order{seedResult.created !== 1 ? "s" : ""} added</p>
@@ -382,6 +387,9 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                         <p className="font-medium text-neutral-12 text-size-2">{order.customer_name}</p>
                         <p className="text-size-1 text-neutral-10">
                           {order.customer_email}{order.customer_phone ? ` · ${order.customer_phone}` : ""}
+                        </p>
+                        <p className="text-size-1 text-neutral-11 mt-0.5 font-medium">
+                          {order.order_items.map((oi) => `${oi.item_name} ×${oi.qty}`).join(", ")}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
