@@ -27,7 +27,6 @@ interface Props {
     order_window_ends_at: string;
     pickup_window_starts_at: string;
     pickup_window_ends_at: string;
-    image_url?: string | null;
   };
   partner: {
     slug: string;
@@ -84,7 +83,7 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
     const id = setInterval(() => {
       setActiveIndex((prev) => {
         const next = (prev + 1) % items.length;
-        carouselRef.current?.scrollTo({ left: next * (carouselRef.current.offsetWidth), behavior: "smooth" });
+        carouselRef.current?.scrollTo({ left: next * (carouselRef.current.offsetWidth * 0.9 + 12), behavior: "smooth" });
         return next;
       });
     }, 2200);
@@ -118,11 +117,16 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
   function handleCarouselScroll() {
     const el = carouselRef.current;
     if (!el) return;
-    setActiveIndex(Math.round(el.scrollLeft / el.offsetWidth));
+    // Each card is 90vw wide + 12px gap; snap offset starts at 5vw
+    const cardWidth = el.offsetWidth * 0.9 + 12;
+    setActiveIndex(Math.round((el.scrollLeft) / cardWidth));
   }
 
   function scrollToCard(i: number) {
-    carouselRef.current?.scrollTo({ left: i * carouselRef.current.offsetWidth, behavior: "smooth" });
+    const el = carouselRef.current;
+    if (!el) return;
+    const cardWidth = el.offsetWidth * 0.9 + 12;
+    el.scrollTo({ left: i * cardWidth, behavior: "smooth" });
   }
 
   const pickupDate = new Date(drop.pickup_window_starts_at).toLocaleDateString("en-US", {
@@ -143,35 +147,47 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
       }}
     >
       <ThemeListener />
-      <div className="max-w-sm mx-auto px-2 pt-8 pb-4 flex flex-col gap-6">
 
-        {/* Drop hero image */}
-        {drop.image_url && (
-          <div data-name="drop-hero" className="w-full aspect-square rounded-2xl overflow-hidden shadow-[0px_4px_16px_-8px_rgba(0,0,0,0.1),0px_3px_12px_-4px_rgba(0,0,0,0.1),0px_2px_3px_-2px_rgba(0,0,51,0.06)]">
-            <img src={drop.image_url} alt={drop.name} className="w-full h-full object-cover" />
-          </div>
-        )}
+      {/* Sticky header with brand + cart */}
+      <div
+        className="sticky top-0 z-20 flex items-center justify-between px-5 py-3"
+        style={{ backgroundColor: partner.bg_color }}
+      >
+        <div>
+          {partner.logo_url ? (
+            <img
+              src={partner.logo_url}
+              alt={partner.business_name}
+              className="h-5 w-auto object-contain mix-blend-multiply"
+            />
+          ) : (
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase opacity-70">
+              {partner.business_name}
+            </p>
+          )}
+        </div>
 
-        {/* Hero */}
-        <div data-name="Hero" className="flex flex-col items-center gap-4 px-4">
+        {/* Cart pill — only visible when cart has items */}
+        <div
+          className="transition-all duration-200 overflow-hidden"
+          style={{ maxWidth: cartCount > 0 ? "160px" : "0px", opacity: cartCount > 0 ? 1 : 0 }}
+        >
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-sm font-semibold whitespace-nowrap"
+            style={{ backgroundColor: "var(--color-accent)" }}
+          >
+            <span>{cartCount} item{cartCount !== 1 ? "s" : ""}</span>
+            <span>·</span>
+            <span>${(subtotalCents / 100).toFixed(2)}</span>
+          </button>
+        </div>
+      </div>
 
-          {/* brand */}
-          <div data-name="brand" className="flex items-center justify-center">
-            {partner.logo_url ? (
-              <img
-                src={partner.logo_url}
-                alt={partner.business_name}
-                className="h-6 w-auto object-contain mix-blend-multiply"
-              />
-            ) : (
-              <p className="text-sm font-semibold tracking-[0.2em] uppercase">
-                {partner.business_name}
-              </p>
-            )}
-          </div>
-
-          {/* Text */}
-          <div data-name="Text" className="flex flex-col items-center gap-2 text-center w-full">
+      {/* Hero text — inside padded container */}
+      <div className="max-w-sm mx-auto px-5 pt-2 pb-4 flex flex-col gap-4">
+        <div data-name="Hero" className="flex flex-col items-center gap-3 text-center">
+          <div data-name="Text" className="flex flex-col items-center gap-2 w-full">
             <p className="text-lg font-semibold leading-snug">{drop.name}</p>
             <p className="text-sm opacity-70">{pickupDate}, {partner.pickup_address}</p>
             {drop.description && (
@@ -192,139 +208,146 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
             )}
           </div>
         </div>
+      </div>
 
-        {/* Carousel */}
-        {items.length > 0 && (
-          <>
-            <div data-name="carousel container">
-              <div
-                ref={carouselRef}
-                onScroll={handleCarouselScroll}
-                className="flex overflow-x-auto snap-x snap-mandatory px-2 gap-3"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
-              >
-                {items.map((item) => {
-                  const qty = cart[item.id] ?? 0;
-                  const soldOut = item.available_qty === 0;
+      {/* Full-bleed carousel */}
+      {items.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div
+            ref={carouselRef}
+            onScroll={handleCarouselScroll}
+            className="flex overflow-x-auto snap-x snap-mandatory"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              paddingLeft: "5vw",
+              paddingRight: "5vw",
+              gap: "12px",
+            } as React.CSSProperties}
+          >
+            {items.map((item) => {
+              const qty = cart[item.id] ?? 0;
+              const soldOut = item.available_qty === 0;
 
-                  return (
+              return (
+                <div
+                  key={item.id}
+                  data-name="Card"
+                  className="flex-none snap-start bg-white rounded-[20px] p-4 flex flex-col gap-2.5"
+                  style={{
+                    width: "90vw",
+                    boxShadow: "inset 0 0 0 1px rgba(0,0,85,0.06), inset 0 1.5px 2px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  {/* top row: photo + controls */}
+                  <div data-name="items" className="flex gap-2">
+
+                    {/* item photo */}
                     <div
-                      key={item.id}
-                      data-name="Card"
-                      className="flex-none w-full snap-start bg-white rounded-[20px] p-4 flex flex-col gap-2.5"
-                      style={{
-                        boxShadow: "inset 0 0 0 1px rgba(0,0,85,0.06), inset 0 1.5px 2px rgba(0,0,0,0.06)",
-                      }}
+                      data-name="item photo"
+                      className="flex-1 aspect-square rounded-[4px] overflow-hidden bg-[#f0efee]"
                     >
-                      {/* top row: photo + controls */}
-                      <div data-name="items" className="flex gap-2">
-
-                        {/* item photo */}
-                        <div
-                          data-name="item photo"
-                          className="flex-1 aspect-square rounded-[4px] overflow-hidden bg-[#f0efee]"
-                        >
-                          {item.photo_url ? (
-                            <img
-                              src={item.photo_url}
-                              alt={item.item_name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center opacity-20 text-3xl">
-                              🍞
-                            </div>
-                          )}
+                      {item.photo_url ? (
+                        <img
+                          src={item.photo_url}
+                          alt={item.item_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center opacity-20 text-3xl">
+                          🍞
                         </div>
+                      )}
+                    </div>
 
-                        {/* controls */}
-                        <div data-name="controls" className="flex-1 flex flex-col gap-2">
+                    {/* controls */}
+                    <div data-name="controls" className="flex-1 flex flex-col gap-2">
 
-                          {/* amount row */}
-                          <div data-name="amount" className="flex gap-2 h-[79px]">
-                            {/* qty display */}
-                            <div className="flex-1 bg-[#f0efee] rounded-[4px] flex items-center justify-center">
-                              <span className="text-[28px] font-normal text-[#242021]">{qty}</span>
-                            </div>
-                            {/* +/- */}
-                            <div data-name="buttons" className="flex-1 flex flex-col gap-2 justify-center">
-                              <button
-                                type="button"
-                                onClick={() => updateQty(item.id, 1, item.available_qty)}
-                                disabled={!ordersOpen || soldOut || qty >= item.available_qty}
-                                className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity"
-                              >
-                                <span className="text-white text-xl leading-none select-none">+</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => updateQty(item.id, -1, item.available_qty)}
-                                disabled={!ordersOpen || qty === 0}
-                                className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity"
-                              >
-                                <span className="text-white text-xl leading-none select-none">−</span>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* add to cart */}
-                          <div
-                            data-name="button add to cart"
-                            className="rounded-[4px] px-4 py-2.5 flex flex-col items-end justify-center"
-                            style={{
-                              backgroundColor: soldOut ? "#c0bfbe" : "var(--color-accent)",
-                              aspectRatio: "167 / 79",
-                            }}
+                      {/* amount row */}
+                      <div data-name="amount" className="flex gap-2 h-[79px]">
+                        {/* qty display */}
+                        <div className="flex-1 bg-[#f0efee] rounded-[4px] flex items-center justify-center">
+                          <span className="text-[28px] font-normal text-[#242021]">{qty}</span>
+                        </div>
+                        {/* +/- */}
+                        <div data-name="buttons" className="flex-1 flex flex-col gap-2 justify-center">
+                          <button
+                            type="button"
+                            onClick={() => updateQty(item.id, 1, item.available_qty)}
+                            disabled={!ordersOpen || soldOut || qty >= item.available_qty}
+                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity"
                           >
-                            <p className="text-white text-[11px] font-semibold tracking-[0.22px] uppercase opacity-80 leading-none">
-                              {soldOut ? "SOLD OUT" : "ADD TO CART"}
-                            </p>
-                            <p className="text-white text-[28px] font-medium leading-none mt-1">
-                              ${((qty > 0 ? qty * item.price_cents : item.price_cents) / 100).toFixed(2)}
-                            </p>
-                          </div>
+                            <span className="text-white text-xl leading-none select-none">+</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateQty(item.id, -1, item.available_qty)}
+                            disabled={!ordersOpen || qty === 0}
+                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity"
+                          >
+                            <span className="text-white text-xl leading-none select-none">−</span>
+                          </button>
                         </div>
                       </div>
 
-                      {/* text */}
-                      <div data-name="text" className="flex flex-col gap-2 pt-4">
-                        <p className="text-lg font-semibold leading-snug text-black">{item.item_name}</p>
-                        {item.description && (
-                          <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
-                        )}
-                        <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
-                          {soldOut ? "Sold out" : `${item.available_qty} left`}
-                        </span>
+                      {/* add to cart display */}
+                      <div
+                        data-name="button add to cart"
+                        className="rounded-[4px] px-4 py-2.5 flex flex-col items-end justify-center"
+                        style={{
+                          backgroundColor: soldOut ? "#c0bfbe" : "var(--color-accent)",
+                          aspectRatio: "167 / 79",
+                        }}
+                      >
+                        <p className="text-white text-[11px] font-semibold tracking-[0.22px] uppercase opacity-80 leading-none">
+                          {soldOut ? "SOLD OUT" : "ADD TO CART"}
+                        </p>
+                        <p className="text-white text-[28px] font-medium leading-none mt-1">
+                          ${((qty > 0 ? qty * item.price_cents : item.price_cents) / 100).toFixed(2)}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  {/* text */}
+                  <div data-name="text" className="flex flex-col gap-2 pt-4">
+                    <p className="text-lg font-semibold leading-snug text-black">{item.item_name}</p>
+                    {item.description && (
+                      <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
+                    )}
+                    <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
+                      {soldOut ? "Sold out" : `${item.available_qty} left`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* pips */}
+          {items.length > 1 && (
+            <div data-name="carouselpips" className="flex items-center justify-center gap-2">
+              {items.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToCard(i)}
+                  className="w-2 h-2 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: i === activeIndex
+                      ? "var(--color-accent)"
+                      : "rgba(0,0,0,0.15)",
+                  }}
+                />
+              ))}
             </div>
+          )}
+        </div>
+      )}
 
-            {/* pips */}
-            {items.length > 1 && (
-              <div data-name="carouselpips" className="flex items-center justify-center gap-2">
-                {items.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => scrollToCard(i)}
-                    className="w-2 h-2 rounded-full transition-colors"
-                    style={{
-                      backgroundColor: i === activeIndex
-                        ? "var(--color-accent)"
-                        : "rgba(0,0,0,0.15)",
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* How it works */}
-        <div data-name="How it works" className="px-2 flex flex-col gap-8 pt-4">
+      {/* How it works */}
+      <div className="max-w-sm mx-auto px-5">
+        <div data-name="How it works" className="flex flex-col gap-8 pt-8">
           <p className="text-lg font-semibold text-center">Here's how it works</p>
           <div className="flex flex-col gap-8">
             {[
@@ -345,7 +368,6 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
             ))}
           </div>
         </div>
-
       </div>
 
       <CheckoutFooter

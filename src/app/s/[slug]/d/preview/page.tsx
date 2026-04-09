@@ -11,7 +11,6 @@ const DUMMY_DROP = {
   order_window_ends_at: new Date(Date.now() + 86400000 * 2).toISOString(),
   pickup_window_starts_at: new Date(Date.now() + 86400000 * 4).toISOString(),
   pickup_window_ends_at: new Date(Date.now() + 86400000 * 5).toISOString(),
-  image_url: null,
 };
 
 const DUMMY_ITEMS = [

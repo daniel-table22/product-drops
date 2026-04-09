@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type { Tables, Database } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
 import { updateDrop } from "../actions";
-import { ImageUpload } from "@/components/image-upload";
+import { SubmitButton } from "@/components/submit-button";
 import { Separator } from "@/components/ui/separator";
 
 type Drop = Tables<"drops">;
@@ -44,6 +44,10 @@ interface Props {
 export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName, userId }: Props) {
   const updateDropWithId = updateDrop.bind(null, drop.id);
   const [addItemOpen, setAddItemOpen] = useState(false);
+  const [addItemPending, setAddItemPending] = useState(false);
+  const [publishPending, startPublishTransition] = useTransition();
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [orderStatePending, setOrderStatePending] = useState<string | null>(null);
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);

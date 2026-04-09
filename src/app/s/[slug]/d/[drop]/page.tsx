@@ -93,7 +93,6 @@ export default async function DropDetailPage({
         order_window_ends_at: drop.order_window_ends_at,
         pickup_window_starts_at: drop.pickup_window_starts_at,
         pickup_window_ends_at: drop.pickup_window_ends_at,
-        image_url: drop.image_url ?? null,
       }}
       partner={{
         slug: partner.slug,

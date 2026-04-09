@@ -16,5 +16,11 @@ export default async function NewDropPage() {
 
   if (!partner) redirect("/onboarding");
 
-  return <NewDropForm userId={user.id} />;
+  const { data: libraryItems } = await supabase
+    .from("items")
+    .select("id, name, description, photo_url, default_price_cents")
+    .is("archived_at", null)
+    .order("name");
+
+  return <NewDropForm libraryItems={libraryItems ?? []} />;
 }

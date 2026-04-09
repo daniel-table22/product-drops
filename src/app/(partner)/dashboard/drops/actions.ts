@@ -14,6 +14,8 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+type ItemEntry = { id: string; priceCents: number; qty: number };
+
 export async function createDrop(
   _prevState: { error: string } | null,
   formData: FormData
@@ -33,11 +35,11 @@ export async function createDrop(
 
   const name = formData.get("name") as string;
   const description = (formData.get("description") as string) || null;
-  const image_url = (formData.get("image_url") as string) || null;
   const order_window_starts_at = formData.get("order_window_starts_at") as string;
   const order_window_ends_at = formData.get("order_window_ends_at") as string;
   const pickup_window_starts_at = formData.get("pickup_window_starts_at") as string;
   const pickup_window_ends_at = formData.get("pickup_window_ends_at") as string;
+  const itemsJson = (formData.get("items") as string) || "[]";
 
   if (!name?.trim()) return { error: "Drop name is required." };
   if (!order_window_starts_at || !order_window_ends_at) return { error: "Order window dates are required." };
@@ -59,7 +61,6 @@ export async function createDrop(
       partner_id: partner.id,
       name,
       description,
-      image_url,
       slug,
       order_window_starts_at: new Date(order_window_starts_at).toISOString(),
       order_window_ends_at: new Date(order_window_ends_at).toISOString(),
@@ -73,6 +74,20 @@ export async function createDrop(
     return { error: error?.message ?? "Could not create drop. Please try again." };
   }
 
+  // Insert items
+  let items: ItemEntry[] = [];
+  try { items = JSON.parse(itemsJson); } catch { /* ignore */ }
+
+  for (const item of items.filter((i) => i.qty > 0)) {
+    await supabase.from("drop_items").insert({
+      drop_id: drop.id,
+      item_id: item.id,
+      price_cents: item.priceCents,
+      total_qty: item.qty,
+      available_qty: item.qty,
+    });
+  }
+
   revalidatePath("/dashboard/drops");
   redirect(`/dashboard/drops/${drop.id}`);
 }
@@ -83,7 +98,6 @@ export async function deleteDrop(id: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Verify ownership
   const { data: drop } = await supabase
     .from("drops")
     .select("partner_id, partners!inner(user_id)")
@@ -107,7 +121,6 @@ export async function updateDrop(id: string, formData: FormData) {
 
   const name = formData.get("name") as string;
   const description = (formData.get("description") as string) || null;
-  const image_url = (formData.get("image_url") as string) || null;
   const order_window_starts_at = formData.get("order_window_starts_at") as string;
   const order_window_ends_at = formData.get("order_window_ends_at") as string;
   const pickup_window_starts_at = formData.get("pickup_window_starts_at") as string;
@@ -118,7 +131,6 @@ export async function updateDrop(id: string, formData: FormData) {
     .update({
       name,
       description,
-      image_url,
       order_window_starts_at: new Date(order_window_starts_at).toISOString(),
       order_window_ends_at: new Date(order_window_ends_at).toISOString(),
       pickup_window_starts_at: new Date(pickup_window_starts_at).toISOString(),
