@@ -228,6 +228,7 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
             {items.map((item) => {
               const qty = cart[item.id] ?? 0;
               const soldOut = item.available_qty === 0;
+              const inCart = qty > 0;
 
               return (
                 <div
@@ -236,89 +237,112 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
                   className="flex-none snap-start bg-white rounded-[20px] p-4 flex flex-col gap-2.5"
                   style={{
                     width: "82vw",
-                    boxShadow: "inset 0 0 0 1px rgba(0,0,85,0.06), inset 0 1.5px 2px rgba(0,0,0,0.06)",
+                    boxShadow: "0px 4px 16px -8px rgba(0,0,0,0.1), 0px 3px 12px -4px rgba(0,0,0,0.1), 0px 2px 3px -2px rgba(0,0,51,0.06)",
                   }}
                 >
-                  {/* top row: photo + controls */}
-                  <div data-name="items" className="flex gap-2">
-
-                    {/* item photo */}
-                    <div
-                      data-name="item photo"
-                      className="flex-1 aspect-square rounded-[4px] overflow-hidden bg-[#f0efee]"
-                    >
-                      {item.photo_url ? (
-                        <img
-                          src={item.photo_url}
-                          alt={item.item_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center opacity-20 text-3xl">
-                          🍞
-                        </div>
-                      )}
-                    </div>
-
-                    {/* controls */}
-                    <div data-name="controls" className="flex-1 flex flex-col gap-2">
-
-                      {/* amount row */}
-                      <div data-name="amount" className="flex gap-2 h-[79px]">
-                        {/* qty display */}
-                        <div className="flex-1 bg-[#f0efee] rounded-[4px] flex items-center justify-center">
-                          <span className="text-[28px] font-normal text-[#242021]">{qty}</span>
-                        </div>
-                        {/* +/- */}
-                        <div data-name="buttons" className="flex-1 flex flex-col gap-2 justify-center">
+                  {inCart ? (
+                    // ── IN CART: text at top, controls row at bottom ──
+                    <>
+                      <div data-name="text" className="flex flex-col gap-2 pb-2">
+                        <p className="text-[18px] font-semibold leading-snug text-black">{item.item_name}</p>
+                        {item.description && (
+                          <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
+                        )}
+                      </div>
+                      <div data-name="controls" className="flex gap-2.5 h-[84px]">
+                        {/* stacked +/- */}
+                        <div className="w-[84px] shrink-0 flex flex-col gap-2">
                           <button
                             type="button"
                             onClick={() => updateQty(item.id, 1, item.available_qty)}
                             disabled={!ordersOpen || soldOut || qty >= item.available_qty}
-                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity"
+                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
                           >
                             <span className="text-white text-xl leading-none select-none">+</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => updateQty(item.id, -1, item.available_qty)}
-                            disabled={!ordersOpen || qty === 0}
-                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity"
+                            disabled={!ordersOpen}
+                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
                           >
                             <span className="text-white text-xl leading-none select-none">−</span>
                           </button>
                         </div>
+                        {/* qty display */}
+                        <div className="w-[84px] shrink-0 bg-[#e4e0d6] rounded-[4px] flex items-center justify-center">
+                          <span className="text-[28px] font-normal text-[#242021]">{qty}</span>
+                        </div>
+                        {/* add to cart button */}
+                        <div
+                          data-name="add-to-cart"
+                          className="flex-1 rounded-[4px] px-4 py-2.5 flex flex-col items-start justify-end"
+                          style={{ backgroundColor: soldOut ? "#c0bfbe" : "var(--color-accent)" }}
+                        >
+                          <p className="text-white text-[11px] font-bold tracking-[0.22px] uppercase opacity-70 leading-none">
+                            {soldOut ? "SOLD OUT" : "ADD TO CART"}
+                          </p>
+                          <p className="text-white text-[28px] font-medium leading-none mt-1">
+                            ${(qty * item.price_cents / 100).toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-
-                      {/* add to cart display */}
-                      <div
-                        data-name="button add to cart"
-                        className="rounded-[4px] px-4 py-2.5 flex flex-col items-end justify-center"
-                        style={{
-                          backgroundColor: soldOut ? "#c0bfbe" : "var(--color-accent)",
-                          aspectRatio: "167 / 79",
-                        }}
-                      >
-                        <p className="text-white text-[11px] font-semibold tracking-[0.22px] uppercase opacity-80 leading-none">
-                          {soldOut ? "SOLD OUT" : "ADD TO CART"}
-                        </p>
-                        <p className="text-white text-[28px] font-medium leading-none mt-1">
-                          ${((qty > 0 ? qty * item.price_cents : item.price_cents) / 100).toFixed(2)}
-                        </p>
+                    </>
+                  ) : (
+                    // ── NOT IN CART: photo left, controls right, text below ──
+                    <>
+                      <div data-name="items" className="flex gap-2.5 items-end">
+                        {/* photo */}
+                        <div
+                          data-name="item-photo"
+                          className="shrink-0 rounded-[4px] overflow-hidden bg-[#f0efee]"
+                          style={{ width: "57%", aspectRatio: "1 / 1" }}
+                        >
+                          {item.photo_url ? (
+                            <img src={item.photo_url} alt={item.item_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center opacity-20 text-3xl">🍞</div>
+                          )}
+                        </div>
+                        {/* right controls */}
+                        <div className="flex-1 self-stretch flex flex-col justify-end gap-0">
+                          {/* badge */}
+                          <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)] mb-auto">
+                            {soldOut ? "Sold out" : `${item.available_qty} left`}
+                          </span>
+                          {/* price */}
+                          <p className="font-mono text-[24px] text-[#242021] py-3 leading-none">
+                            ${(item.price_cents / 100).toFixed(2)}
+                          </p>
+                          {/* ± buttons side by side */}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled
+                              className="flex-1 h-[56px] bg-[#e2e2e2] rounded-[4px] flex items-center justify-center opacity-40 cursor-not-allowed"
+                            >
+                              <span className="text-[#242021] text-xl leading-none select-none">−</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateQty(item.id, 1, item.available_qty)}
+                              disabled={!ordersOpen || soldOut}
+                              className="flex-1 h-[56px] bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
+                            >
+                              <span className="text-white text-xl leading-none select-none">+</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* text */}
-                  <div data-name="text" className="flex flex-col gap-2 pt-4">
-                    <p className="text-lg font-semibold leading-snug text-black">{item.item_name}</p>
-                    {item.description && (
-                      <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
-                    )}
-                    <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
-                      {soldOut ? "Sold out" : `${item.available_qty} left`}
-                    </span>
-                  </div>
+                      {/* text below photo+controls */}
+                      <div data-name="text" className="flex flex-col gap-1 pt-1">
+                        <p className="text-[18px] font-semibold leading-snug text-black">{item.item_name}</p>
+                        {item.description && (
+                          <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}
