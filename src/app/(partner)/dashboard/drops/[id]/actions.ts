@@ -65,7 +65,7 @@ export async function publishDrop(dropId: string) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const dropUrl = `${appUrl}/s/${partner.slug}/d/${drop.slug}`;
 
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       (subscribers ?? []).map((s) =>
         twilioClient.messages.create({
           to: s.phone,
@@ -74,6 +74,8 @@ export async function publishDrop(dropId: string) {
         })
       )
     );
+    const sent = results.filter((r) => r.status === "fulfilled").length;
+    await supabase.from("drops").update({ blast_count: sent }).eq("id", dropId);
   }
 
   revalidatePath(`/dashboard/drops/${dropId}`);
@@ -114,6 +116,7 @@ export async function sendBlast(dropId: string, message: string) {
   );
 
   const sent = results.filter((r) => r.status === "fulfilled").length;
+  await supabase.from("drops").update({ blast_count: sent }).eq("id", dropId);
   revalidatePath(`/dashboard/drops/${dropId}`);
   return { sent };
 }

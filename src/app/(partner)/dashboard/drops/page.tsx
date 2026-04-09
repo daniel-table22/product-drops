@@ -25,6 +25,12 @@ export default async function DropsPage() {
     .eq("partner_id", partner.id)
     .order("created_at", { ascending: false });
 
+  const { count: subscriberCount } = await supabase
+    .from("subscribers")
+    .select("id", { count: "exact", head: true })
+    .eq("partner_id", partner.id)
+    .eq("opted_in", true);
+
   return (
     <div className="px-8 py-10 space-y-6">
       <PageHeader title="Drops" size="large" actions={<Button asChild size="sm"><a href="/dashboard/drops/new">New drop</a></Button>} />
@@ -40,6 +46,7 @@ export default async function DropsPage() {
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Order window</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Pickup window</th>
+                <th className="px-4 py-3 text-right font-medium text-neutral-11">Sign-ups</th>
                 <th className="px-4 py-3 text-right font-medium text-neutral-11"></th>
               </tr>
             </thead>
@@ -65,13 +72,13 @@ export default async function DropsPage() {
                     {new Date(drop.pickup_window_starts_at).toLocaleDateString()} →{" "}
                     {new Date(drop.pickup_window_ends_at).toLocaleDateString()}
                   </td>
+                  <td className="px-4 py-3 text-right text-neutral-12 font-mono text-size-2">
+                    {subscriberCount ?? 0} / {drop.blast_count}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Button asChild size="sm" variant="ghost">
                         <a href={`/dashboard/drops/${drop.id}`}>View</a>
-                      </Button>
-                      <Button asChild size="sm" variant="ghost">
-                        <a href={`/dashboard/drops/${drop.id}/edit`}>Edit</a>
                       </Button>
                       <Button asChild size="sm" variant="ghost">
                         <a
