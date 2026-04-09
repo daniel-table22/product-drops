@@ -67,6 +67,7 @@ export default async function DropDetailPage({
       partnerSlug={partner.slug}
       subscriberCount={subscriberCount ?? 0}
       businessName={partner.business_name}
+      userId={user.id}
     />
   );
 }

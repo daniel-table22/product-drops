@@ -16,11 +16,18 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
+import { updateDrop } from "../actions";
+import { ImageUpload } from "@/components/image-upload";
+import { Separator } from "@/components/ui/separator";
 
 type Drop = Tables<"drops">;
 type DropItem = Tables<"drop_items"> & { item: Tables<"items"> };
 type Order = Tables<"orders"> & { order_items: Tables<"order_items">[] };
 type OrderState = Database["public"]["Enums"]["order_state"];
+
+function toDateTimeLocal(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 16);
+}
 
 interface Props {
   drop: Drop;
@@ -31,9 +38,11 @@ interface Props {
   partnerSlug: string;
   subscriberCount: number;
   businessName: string;
+  userId: string;
 }
 
-export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName }: Props) {
+export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName, userId }: Props) {
+  const updateDropWithId = updateDrop.bind(null, drop.id);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
@@ -108,9 +117,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button asChild variant="outline" size="sm">
-            <a href={`/dashboard/drops/${drop.id}/edit`}>Edit</a>
-          </Button>
           <Button asChild variant="ghost" size="sm">
             <a
               href={`/s/${partnerSlug}/d/${drop.slug}`}
@@ -142,23 +148,58 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
         </TabsList>
 
         {/* ── Overview ── */}
-        <TabsContent value="overview" className="space-y-6 pt-2">
-          <div className="grid grid-cols-2 gap-6 max-w-lg">
-            <div>
-              <p className="text-size-1 font-medium text-neutral-10 uppercase tracking-wider">Order window</p>
-              <p className="mt-1 text-size-2 text-neutral-12">
-                {new Date(drop.order_window_starts_at).toLocaleString()} →{" "}
-                {new Date(drop.order_window_ends_at).toLocaleString()}
-              </p>
+        <TabsContent value="overview" className="space-y-8 pt-2">
+
+          {/* Drop details form */}
+          <form action={updateDropWithId} className="space-y-5 max-w-xl">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">Drop name</Label>
+              <Input id="name" name="name" defaultValue={drop.name} required />
             </div>
-            <div>
-              <p className="text-size-1 font-medium text-neutral-10 uppercase tracking-wider">Pickup window</p>
-              <p className="mt-1 text-size-2 text-neutral-12">
-                {new Date(drop.pickup_window_starts_at).toLocaleString()} →{" "}
-                {new Date(drop.pickup_window_ends_at).toLocaleString()}
-              </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="description">Description (optional)</Label>
+              <Input id="description" name="description" defaultValue={drop.description ?? ""} />
             </div>
-          </div>
+            <ImageUpload
+              name="image_url"
+              label="Drop photo"
+              defaultUrl={drop.image_url ?? null}
+              userId={userId}
+              storagePath="drop"
+              previewShape="wide"
+            />
+            <fieldset className="space-y-3">
+              <legend className="text-size-2 font-medium text-neutral-12">Order window</legend>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="order_window_starts_at">Opens</Label>
+                  <Input id="order_window_starts_at" name="order_window_starts_at" type="datetime-local" defaultValue={toDateTimeLocal(drop.order_window_starts_at)} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="order_window_ends_at">Closes</Label>
+                  <Input id="order_window_ends_at" name="order_window_ends_at" type="datetime-local" defaultValue={toDateTimeLocal(drop.order_window_ends_at)} required />
+                </div>
+              </div>
+            </fieldset>
+            <fieldset className="space-y-3">
+              <legend className="text-size-2 font-medium text-neutral-12">Pickup window</legend>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="pickup_window_starts_at">Opens</Label>
+                  <Input id="pickup_window_starts_at" name="pickup_window_starts_at" type="datetime-local" defaultValue={toDateTimeLocal(drop.pickup_window_starts_at)} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pickup_window_ends_at">Closes</Label>
+                  <Input id="pickup_window_ends_at" name="pickup_window_ends_at" type="datetime-local" defaultValue={toDateTimeLocal(drop.pickup_window_ends_at)} required />
+                </div>
+              </div>
+            </fieldset>
+            <div className="flex justify-end">
+              <Button type="submit" size="sm">Save changes</Button>
+            </div>
+          </form>
+
+          <Separator />
 
           {/* ── SMS blast composer ── */}
           <div className="space-y-3 max-w-xl">
