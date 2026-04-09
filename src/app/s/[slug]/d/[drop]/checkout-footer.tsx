@@ -137,7 +137,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-30 flex flex-col gap-[10px] px-6 pt-4 pb-[48px]"
+      className="fixed bottom-0 left-0 right-0 z-30 flex flex-col gap-[10px] px-6 py-4 pb-safe"
       style={{ backgroundColor: "var(--color-bg, #faf9f6)", borderTop: "1px solid rgba(0,0,0,0.08)" }}
     >
       {/* Error */}
@@ -146,7 +146,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
       )}
 
       {/* Total */}
-      <p className="text-[21px] font-medium" style={{ color: "var(--color-fg, #000)" }}>
+      <p className="font-mono text-[16px] leading-[16px]" style={{ color: "var(--color-fg, #000)" }}>
         Total ${(subtotalCents / 100).toFixed(2)}
       </p>
 
@@ -157,7 +157,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
           type="button"
           onClick={handleManualCheckout}
           disabled={cardPending}
-          className="flex-1 py-4 px-[10px] rounded-[8px] flex items-center justify-center text-[17px] font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          className="flex-1 py-4 px-[10px] rounded-[4px] flex items-center justify-center text-[16px] font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           style={{ backgroundColor: "#242021" }}
         >
           {cardPending ? "Redirecting…" : "Pay by card"}
@@ -175,7 +175,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
               ["--apple-pay-button-style" as string]: "black",
               ["--apple-pay-button-type" as string]: "plain",
               flex: "1",
-              borderRadius: "8px",
+              borderRadius: "4px",
               opacity: applePayPending ? 0.35 : 1,
               cursor: applePayPending ? "not-allowed" : "pointer",
             }}
@@ -188,7 +188,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
             type="button"
             onClick={handleManualCheckout}
             disabled={cardPending}
-            className="flex-1 py-4 px-[10px] rounded-[8px] flex items-center justify-center text-[17px] font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-4 px-[10px] rounded-[4px] flex items-center justify-center text-[16px] font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#242021" }}
           >
             {cardPending ? "Redirecting…" : "Checkout"}

@@ -122,7 +122,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
       {/* Sticky header */}
       <div
-        className="sticky top-0 z-20 flex items-center justify-center px-5 py-3"
+        className="flex items-center justify-center px-5 py-3"
       >
         {partner.logo_url ? (
           <img
