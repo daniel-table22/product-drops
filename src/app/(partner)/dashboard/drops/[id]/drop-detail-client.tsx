@@ -16,6 +16,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
+import { ImageUpload } from "@/components/image-upload";
 import { updateDrop } from "../actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Separator } from "@/components/ui/separator";
