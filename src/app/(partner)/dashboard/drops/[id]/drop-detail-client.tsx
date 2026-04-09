@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { updateOrderState, publishDrop, addDropItem, removeDropItem } from "./actions";
+import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast } from "./actions";
 
 type Drop = Tables<"drops">;
 type DropItem = Tables<"drop_items"> & { item: Tables<"items"> };
@@ -29,10 +29,14 @@ interface Props {
   libraryItems: Tables<"items">[];
   isStripeReady: boolean;
   partnerSlug: string;
+  subscriberCount: number;
 }
 
-export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug }: Props) {
+export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount }: Props) {
   const [addItemOpen, setAddItemOpen] = useState(false);
+  const [blastMessage, setBlastMessage] = useState("");
+  const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
+  const [blastPending, setBlastPending] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(libraryItems[0]?.id ?? "");
   const [itemPrice, setItemPrice] = useState("");
   const [itemQty, setItemQty] = useState("");
@@ -127,6 +131,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
           <TabsTrigger value="pack-list">Pack list</TabsTrigger>
           <TabsTrigger value="prep-list">Prep list</TabsTrigger>
+          <TabsTrigger value="notify">Notify ({subscriberCount})</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -332,6 +337,48 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           >
             Print
           </button>
+        </TabsContent>
+        {/* ── Notify ── */}
+        <TabsContent value="notify" className="pt-2 space-y-4 max-w-lg">
+          <p className="text-size-2 text-neutral-10">
+            Send an SMS to all {subscriberCount} opted-in subscriber{subscriberCount !== 1 ? "s" : ""}.
+          </p>
+          {subscriberCount === 0 ? (
+            <p className="text-size-2 text-neutral-10">No subscribers yet — share your storefront link to grow your list.</p>
+          ) : (
+            <div className="space-y-3">
+              <textarea
+                value={blastMessage}
+                onChange={(e) => setBlastMessage(e.target.value)}
+                rows={4}
+                maxLength={320}
+                placeholder={`Hey! ${drop.name} is open for orders. Check it out →`}
+                className="w-full rounded-3 border border-neutral-6 bg-transparent px-3 py-2 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8 resize-none"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-size-1 text-neutral-10">{blastMessage.length}/320</span>
+                <Button
+                  size="sm"
+                  disabled={blastPending || !blastMessage.trim()}
+                  onClick={async () => {
+                    setBlastPending(true);
+                    setBlastResult(null);
+                    const result = await sendBlast(drop.id, blastMessage);
+                    setBlastResult(result as { sent: number });
+                    setBlastPending(false);
+                    setBlastMessage("");
+                  }}
+                >
+                  {blastPending ? "Sending…" : `Send to ${subscriberCount}`}
+                </Button>
+              </div>
+              {blastResult && (
+                <p className="text-size-2 text-accent-11 font-medium">
+                  Sent to {blastResult.sent} subscriber{blastResult.sent !== 1 ? "s" : ""}.
+                </p>
+              )}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

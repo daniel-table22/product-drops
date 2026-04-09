@@ -80,6 +80,43 @@ export async function publishDrop(dropId: string) {
   revalidatePath("/dashboard");
 }
 
+export async function sendBlast(dropId: string, message: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: partner } = await supabase
+    .from("partners")
+    .select("id, slug, business_name")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!partner) return { error: "Partner not found." };
+
+  const { data: subscribers } = await supabase
+    .from("subscribers")
+    .select("phone")
+    .eq("partner_id", partner.id)
+    .eq("opted_in", true);
+
+  if (!subscribers?.length) return { sent: 0 };
+
+  const results = await Promise.allSettled(
+    subscribers.map((s) =>
+      twilioClient.messages.create({
+        to: s.phone,
+        from: TWILIO_PHONE,
+        body: message,
+      })
+    )
+  );
+
+  const sent = results.filter((r) => r.status === "fulfilled").length;
+  revalidatePath(`/dashboard/drops/${dropId}`);
+  return { sent };
+}
+
 export async function addDropItem(
   dropId: string,
   itemId: string,

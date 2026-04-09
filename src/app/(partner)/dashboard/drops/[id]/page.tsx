@@ -51,6 +51,12 @@ export default async function DropDetailPage({
 
   const libraryItems = (allItems ?? []).filter((item) => !attachedItemIds.has(item.id));
 
+  const { count: subscriberCount } = await supabase
+    .from("subscribers")
+    .select("id", { count: "exact", head: true })
+    .eq("partner_id", partner.id)
+    .eq("opted_in", true);
+
   return (
     <DropDetailClient
       drop={drop}
@@ -59,6 +65,7 @@ export default async function DropDetailPage({
       libraryItems={libraryItems}
       isStripeReady={partner.onboarding_state === "stripe_ready"}
       partnerSlug={partner.slug}
+      subscriberCount={subscriberCount ?? 0}
     />
   );
 }

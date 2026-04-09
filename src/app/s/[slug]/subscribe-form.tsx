@@ -13,6 +13,7 @@ export function SubscribeForm({
 }) {
   const router = useRouter();
   const [phone, setPhone] = useState("");
+  const [consent, setConsent] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -75,6 +76,18 @@ export function SubscribeForm({
           {isPending ? "…" : "Notify me!"}
         </button>
       </div>
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          required
+          className="mt-0.5 shrink-0 accent-[var(--color-accent)]"
+        />
+        <span className="text-xs leading-snug" style={{ color: "color-mix(in srgb, var(--color-accent) 70%, transparent)" }}>
+          I agree to receive order confirmations and pickup reminders by SMS from {partnerName}. Reply STOP to opt out.
+        </span>
+      </label>
       {error && (
         <p className="text-xs text-red-600 text-center">{error}</p>
       )}
