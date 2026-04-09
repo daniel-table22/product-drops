@@ -9,15 +9,12 @@ export default async function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-24">
       <h1 className="text-4xl font-bold">Product Drops</h1>
       <p className="text-lg text-gray-500">hello world</p>
-      <div className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
-        <span
-          className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
-        />
-        <span>
-          Supabase:{" "}
-          {connected ? "connected" : `error — ${error?.message}`}
-        </span>
-      </div>
+      <a
+        href="/login"
+        className="rounded-full border px-6 py-2 text-sm font-medium hover:bg-neutral-3 transition-colors"
+      >
+        Log in →
+      </a>
     </main>
   );
 }
