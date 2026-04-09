@@ -44,8 +44,8 @@ export async function createCheckoutSession(
 
   const cartLines = cart.filter((l) => l.qty > 0);
 
-  // Verify drop is still orders_open (public read via RLS)
-  const { data: drop } = await db
+  // Verify drop is still orders_open (serviceClient bypasses RLS — works regardless of published_at)
+  const { data: drop } = await serviceClient
     .from("drops")
     .select("id, state, partner_id, order_window_ends_at")
     .eq("id", drop_id)
@@ -55,8 +55,8 @@ export async function createCheckoutSession(
     return { error: "This drop is no longer accepting orders." };
   }
 
-  // Fetch partner's Stripe account (public read via RLS)
-  const { data: partner } = await db
+  // Fetch partner's Stripe account
+  const { data: partner } = await serviceClient
     .from("partners")
     .select("stripe_account_id")
     .eq("id", drop.partner_id)
@@ -167,8 +167,8 @@ export async function createPaymentIntent(
   const db = createAnonClient();
   const serviceClient = createServiceClient();
 
-  // Verify drop state (public read via RLS)
-  const { data: drop } = await db
+  // Verify drop state (serviceClient bypasses RLS — works regardless of published_at)
+  const { data: drop } = await serviceClient
     .from("drops")
     .select("id, state, order_window_ends_at")
     .eq("id", dropId)
