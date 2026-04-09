@@ -45,14 +45,14 @@ export async function createCheckoutSession(
   const cartLines = cart.filter((l) => l.qty > 0);
 
   // Verify drop is still orders_open (serviceClient bypasses RLS — works regardless of published_at)
-  const { data: drop } = await serviceClient
+  const { data: drop, error: dropErr } = await serviceClient
     .from("drops")
     .select("id, state, partner_id, order_window_ends_at")
     .eq("id", drop_id)
     .single();
 
   if (!drop) {
-    return { error: `Drop not found (id: ${drop_id}).` };
+    return { error: `Drop not found (id: ${drop_id}). DB error: ${dropErr?.code} — ${dropErr?.message}` };
   }
   if (drop.state !== "orders_open") {
     return { error: `Drop state is "${drop.state}", not orders_open.` };
