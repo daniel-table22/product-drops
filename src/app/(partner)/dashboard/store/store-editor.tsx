@@ -95,6 +95,28 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
               <Label htmlFor="pickup_address">Pickup address</Label>
               <Input id="pickup_address" name="pickup_address" defaultValue={partner.pickup_address} required />
             </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="intro_heading">Intro heading</Label>
+              <Input
+                id="intro_heading"
+                name="intro_heading"
+                defaultValue={partner.intro_heading ?? ""}
+                placeholder="First dibs on our next bake"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="intro_body">Intro body</Label>
+              <textarea
+                id="intro_body"
+                name="intro_body"
+                defaultValue={partner.intro_body ?? ""}
+                placeholder="We bake what we can, when we can…"
+                rows={4}
+                className="w-full rounded-3 border border-neutral-6 bg-transparent px-3 py-2 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8 resize-none"
+              />
+            </div>
           </div>
 
           <div className="space-y-4">

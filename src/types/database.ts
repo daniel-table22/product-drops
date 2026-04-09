@@ -270,6 +270,8 @@ export type Database = {
           font_style: string
           hero_url: string | null
           id: string
+          intro_body: string | null
+          intro_heading: string | null
           logo_url: string | null
           onboarding_state: Database["public"]["Enums"]["partner_onboarding_state"]
           pickup_address: string
@@ -287,6 +289,8 @@ export type Database = {
           font_style?: string
           hero_url?: string | null
           id?: string
+          intro_body?: string | null
+          intro_heading?: string | null
           logo_url?: string | null
           onboarding_state?: Database["public"]["Enums"]["partner_onboarding_state"]
           pickup_address: string
@@ -304,6 +308,8 @@ export type Database = {
           font_style?: string
           hero_url?: string | null
           id?: string
+          intro_body?: string | null
+          intro_heading?: string | null
           logo_url?: string | null
           onboarding_state?: Database["public"]["Enums"]["partner_onboarding_state"]
           pickup_address?: string

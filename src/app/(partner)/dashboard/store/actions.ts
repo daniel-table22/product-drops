@@ -27,10 +27,12 @@ export async function updateStore(formData: FormData) {
   const fg_color = (formData.get("fg_color") as string) || "#000000";
   const accent_color = (formData.get("accent_color") as string) || "#501b00";
   const font_style = (formData.get("font_style") as string) || "sans";
+  const intro_heading = (formData.get("intro_heading") as string) || null;
+  const intro_body = (formData.get("intro_body") as string) || null;
 
   await supabase
     .from("partners")
-    .update({ business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style })
+    .update({ business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style, intro_heading, intro_body })
     .eq("id", partner.id);
 
   revalidatePath("/dashboard/store");

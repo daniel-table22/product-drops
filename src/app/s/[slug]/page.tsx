@@ -32,7 +32,7 @@ export default async function StorefrontPage({
 
   const { data: partner } = await supabase
     .from("partners")
-    .select("id, business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style")
+    .select("id, business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style, intro_heading, intro_body")
     .eq("slug", slug)
     .single();
 
@@ -121,10 +121,10 @@ export default async function StorefrontPage({
         {/* intro */}
         <div data-name="intro" className="flex flex-col gap-3 px-6 text-center">
           <p className="text-lg font-semibold text-black leading-snug">
-            First dibs on our next bake
+            {partner.intro_heading ?? "First dibs on our next bake"}
           </p>
           <p className="text-base text-black/60 leading-relaxed">
-            We bake what we can, when we can. Drops go live Friday mornings and usually sell out the same day. Leave your number and we'll send a text when the next one's ready — no newsletters, no spam, just a note when there's bread.
+            {partner.intro_body ?? "We bake what we can, when we can. Drops go live Friday mornings and usually sell out the same day. Leave your number and we'll send a text when the next one's ready — no newsletters, no spam, just a note when there's bread."}
           </p>
         </div>
 

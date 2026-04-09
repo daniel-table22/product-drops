@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import type { Tables, Database } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,9 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const [reminderValue, setReminderValue] = useState<string>(
     drop.reminder_days_before != null ? String(drop.reminder_days_before) : "dont"
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);
@@ -76,6 +79,13 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const [itemQtys, setItemQtys] = useState<Record<string, string>>(() =>
     Object.fromEntries(libraryItems.map((i) => [i.id, "0"]))
   );
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const canPublish = isStripeReady && drop.state === "scheduled";
 
@@ -154,7 +164,15 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          if (isDirty && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+          setIsDirty(false);
+          setActiveTab(v);
+        }}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
@@ -167,7 +185,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
         <TabsContent value="overview" className="space-y-8 pt-2">
 
           {/* Drop details form */}
-          <form action={updateDropWithId} className="space-y-5 max-w-xl">
+          <form ref={formRef} action={updateDropWithId} onSubmit={() => setIsDirty(false)} onChange={() => setIsDirty(true)} className="space-y-5 max-w-xl">
             <input type="hidden" name="announce_days_before" value={announceValue === "dont" ? "" : announceValue} />
             <input type="hidden" name="reminder_days_before" value={reminderValue === "dont" ? "" : reminderValue} />
             <div className="space-y-1.5">
@@ -254,9 +272,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 </div>
               </div>
             </fieldset>
-            <div className="flex justify-end">
-              <Button type="submit" size="sm">Save changes</Button>
-            </div>
           </form>
 
           <div className="space-y-3">
@@ -276,6 +291,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 <table className="w-full text-size-2">
                   <thead className="bg-neutral-2 border-b border-neutral-6">
                     <tr>
+                      <th className="px-4 py-3 w-10" />
                       <th className="px-4 py-3 text-left font-medium text-neutral-11">Item</th>
                       <th className="px-4 py-3 text-right font-medium text-neutral-11">Price</th>
                       <th className="px-4 py-3 text-right font-medium text-neutral-11">Qty</th>
@@ -286,6 +302,13 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                   <tbody className="divide-y divide-neutral-6">
                     {dropItems.map((di) => (
                       <tr key={di.id} className="bg-surface">
+                        <td className="px-4 py-3">
+                          {di.item.photo_url ? (
+                            <img src={di.item.photo_url} alt={di.item.name} className="w-8 h-8 rounded-2 object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-2 bg-neutral-3" />
+                          )}
+                        </td>
                         <td className="px-4 py-3 font-medium text-neutral-12">{di.item.name}</td>
                         <td className="px-4 py-3 text-right text-neutral-12">
                           ${(di.price_cents / 100).toFixed(2)}
@@ -308,6 +331,10 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 </table>
               </div>
             )}
+          </div>
+
+          <div className="flex justify-end max-w-xl pt-2">
+            <Button onClick={() => formRef.current?.requestSubmit()}>Save changes</Button>
           </div>
         </TabsContent>
 
