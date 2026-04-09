@@ -57,6 +57,7 @@ export async function createDrop(formData: FormData) {
 
   if (error || !drop) redirect("/dashboard/drops");
 
+  revalidatePath("/dashboard/drops");
   redirect(`/dashboard/drops/${drop.id}`);
 }
 
