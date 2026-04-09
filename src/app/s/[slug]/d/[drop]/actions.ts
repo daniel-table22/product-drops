@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { stripe } from "@/lib/stripe/client";
 
@@ -14,7 +13,6 @@ type CartLine = {
 export async function createCheckoutSession(
   formData: FormData
 ): Promise<{ url: string } | { error: string }> {
-  const supabase = await createClient();
   const serviceClient = createServiceClient();
 
   const drop_id = formData.get("drop_id") as string;
@@ -36,7 +34,7 @@ export async function createCheckoutSession(
   const cartLines = cart.filter((l) => l.qty > 0);
 
   // Verify drop is still orders_open
-  const { data: drop } = await supabase
+  const { data: drop } = await serviceClient
     .from("drops")
     .select("id, state, partner_id")
     .eq("id", drop_id)
@@ -47,7 +45,7 @@ export async function createCheckoutSession(
   }
 
   // Fetch partner's Stripe account
-  const { data: partner } = await supabase
+  const { data: partner } = await serviceClient
     .from("partners")
     .select("stripe_account_id")
     .eq("id", drop.partner_id)
@@ -100,7 +98,7 @@ export async function createCheckoutSession(
     .insert({
       drop_id,
       customer_email: "",
-      stripe_session_id: "placeholder", // will update after session creation
+      stripe_session_id: `cs_pending_${crypto.randomUUID()}`, // will update after session creation
       line_items: cartLines,
       reserved_until,
     })
@@ -174,9 +172,8 @@ export async function createPaymentIntent(
 ): Promise<{ clientSecret: string; paymentIntentId: string; pendingOrderId: string } | { error: string }> {
   const { dropId, cartLines, subtotalCents, partnerStripeAccountId, customerName, customerEmail, customerPhone } = params;
   const serviceClient = createServiceClient();
-  const supabase = await createClient();
 
-  const { data: drop } = await supabase
+  const { data: drop } = await serviceClient
     .from("drops")
     .select("id, state, order_window_ends_at")
     .eq("id", dropId)
@@ -217,7 +214,7 @@ export async function createPaymentIntent(
     .insert({
       drop_id: dropId,
       customer_email: customerEmail,
-      stripe_session_id: "payment_intent_pending",
+      stripe_session_id: `pi_pending_${crypto.randomUUID()}`,
       line_items: cartLines,
       reserved_until: drop.order_window_ends_at,
     })
