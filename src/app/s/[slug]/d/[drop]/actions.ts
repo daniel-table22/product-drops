@@ -51,8 +51,11 @@ export async function createCheckoutSession(
     .eq("id", drop_id)
     .single();
 
-  if (!drop || drop.state !== "orders_open") {
-    return { error: "This drop is no longer accepting orders." };
+  if (!drop) {
+    return { error: `Drop not found (id: ${drop_id}).` };
+  }
+  if (drop.state !== "orders_open") {
+    return { error: `Drop state is "${drop.state}", not orders_open.` };
   }
 
   // Fetch partner's Stripe account
