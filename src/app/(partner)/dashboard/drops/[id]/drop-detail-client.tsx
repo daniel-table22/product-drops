@@ -16,7 +16,6 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
-import { ImageUpload } from "@/components/image-upload";
 import { updateDrop } from "../actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Separator } from "@/components/ui/separator";
@@ -166,14 +165,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
               <Label htmlFor="description">Description (optional)</Label>
               <Input id="description" name="description" defaultValue={drop.description ?? ""} />
             </div>
-            <ImageUpload
-              name="image_url"
-              label="Drop photo"
-              defaultUrl={drop.image_url ?? null}
-              userId={userId}
-              storagePath="drop"
-              previewShape="wide"
-            />
             <fieldset className="space-y-3">
               <legend className="text-size-2 font-medium text-neutral-12">Order window</legend>
               <div className="grid grid-cols-2 gap-4">
