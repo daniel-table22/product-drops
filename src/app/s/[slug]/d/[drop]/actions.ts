@@ -36,7 +36,7 @@ export async function createCheckoutSession(
   // Verify drop is still orders_open
   const { data: drop } = await serviceClient
     .from("drops")
-    .select("id, state, partner_id")
+    .select("id, state, partner_id, order_window_ends_at")
     .eq("id", drop_id)
     .single();
 
