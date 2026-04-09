@@ -138,7 +138,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-30 flex flex-col gap-[10px] px-6 py-4 pb-safe"
-      style={{ backgroundColor: "var(--color-bg, #faf9f6)", borderTop: "1px solid rgba(0,0,0,0.08)" }}
+      style={{ backgroundColor: "var(--color-bg, #faf9f6)", boxShadow: "0px 0px 21px 0px rgba(0,0,51,0.16)" }}
     >
       {/* Error */}
       {(applePayError || cardError) && (
