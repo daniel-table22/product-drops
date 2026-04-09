@@ -21,19 +21,20 @@ interface Props {
 }
 
 export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Props) {
-  const [canApplePay, setCanApplePay] = useState<boolean | null>(null); // null = loading
+  const [canApplePay, setCanApplePay] = useState<boolean | null>(null);
   const [applePayPending, setApplePayPending] = useState(false);
   const [applePayError, setApplePayError] = useState<string | null>(null);
   const [cardPending, setCardPending] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const prRef = useRef<PaymentRequest | null>(null);
   const stripeRef = useRef<Stripe | null>(null);
-  // Keep latest cart state accessible inside the stale paymentmethod closure
   const cartLinesRef = useRef(cartLines);
   const subtotalCentsRef = useRef(subtotalCents);
   cartLinesRef.current = cartLines;
   subtotalCentsRef.current = subtotalCents;
+
   const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
+  const ordersOpen = drop.state === "orders_open";
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +46,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
       const pr = stripe.paymentRequest({
         country: "US",
         currency: "usd",
-        total: { label: "Order total", amount: subtotalCents },
+        total: { label: "Order total", amount: subtotalCents || 1 },
         requestPayerName: true,
         requestPayerEmail: true,
         requestPayerPhone: true,
@@ -78,6 +79,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
           return;
         }
 
+        const stripe = stripeRef.current!;
         const { error: confirmError } = await stripe.confirmCardPayment(
           intentResult.clientSecret,
           { payment_method: ev.paymentMethod.id },
@@ -93,7 +95,6 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
 
         ev.complete("success");
 
-        // Handle 3DS if needed
         const { error: actionError } = await stripe.confirmCardPayment(intentResult.clientSecret);
         if (actionError) {
           setApplePayError(actionError.message ?? "Payment failed.");
@@ -101,7 +102,6 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
           return;
         }
 
-        // Redirect to success
         window.location.href = `/s/${partner.slug}/d/${drop.slug}/success?payment_intent=${intentResult.paymentIntentId}`;
       });
     }
@@ -112,10 +112,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
 
   function handleApplePay() {
     if (!prRef.current || !subtotalCents) return;
-    // Update amount in case cart changed
-    prRef.current.update({
-      total: { label: "Order total", amount: subtotalCents },
-    });
+    prRef.current.update({ total: { label: "Order total", amount: subtotalCents } });
     prRef.current.show();
   }
 
@@ -136,55 +133,69 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
     }
   }
 
-  const ordersOpen = drop.state === "orders_open";
-  const hasItems = cartCount > 0;
-
-  if (!ordersOpen) return null;
+  if (!ordersOpen || cartCount === 0) return null;
 
   return (
-    <div className="px-5 pt-4 pb-2 flex flex-col gap-2">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-3 pb-6"
+      style={{ backgroundColor: "var(--color-bg, #faf9f6)", borderTop: "1px solid rgba(0,0,0,0.08)" }}
+    >
+      {/* Error */}
       {(applePayError || cardError) && (
         <p className="text-xs text-red-600 text-center mb-2">{applePayError ?? cardError}</p>
       )}
 
-      {canApplePay ? (
-        <div className="flex flex-col gap-2">
+      {/* Total */}
+      <p className="text-sm opacity-60 mb-3" style={{ color: "var(--color-fg, #000)" }}>
+        Total ${(subtotalCents / 100).toFixed(2)}
+      </p>
+
+      {/* Buttons */}
+      <div className="flex gap-3">
+        {/* Pay by card */}
+        <button
+          type="button"
+          onClick={handleManualCheckout}
+          disabled={cardPending}
+          className="flex-1 h-[48px] rounded-[8px] border border-black/20 flex items-center justify-center text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          style={{ color: "var(--color-fg, #000)" }}
+        >
+          {cardPending ? "Redirecting…" : "Pay by card"}
+        </button>
+
+        {/* Apple Pay — only shown if available */}
+        {canApplePay && (
           <button
             type="button"
             onClick={handleApplePay}
-            disabled={applePayPending || !hasItems}
+            disabled={applePayPending}
             aria-label="Pay with Apple Pay"
             style={{
               WebkitAppearance: "-apple-pay-button" as React.CSSProperties["WebkitAppearance"],
               ["--apple-pay-button-style" as string]: "black",
               ["--apple-pay-button-type" as string]: "plain",
-              width: "100%",
+              flex: "1",
               height: "48px",
               borderRadius: "8px",
-              opacity: applePayPending || !hasItems ? 0.35 : 1,
-              cursor: applePayPending || !hasItems ? "not-allowed" : "pointer",
+              opacity: applePayPending ? 0.35 : 1,
+              cursor: applePayPending ? "not-allowed" : "pointer",
             }}
           />
+        )}
+
+        {/* Fallback: single full-width checkout when Apple Pay not available */}
+        {canApplePay === false && (
           <button
             type="button"
             onClick={handleManualCheckout}
-            disabled={cardPending || !hasItems}
-            className="w-full text-center text-sm text-neutral-500 underline py-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={cardPending}
+            className="flex-1 h-[48px] rounded-[8px] flex items-center justify-center text-sm font-medium text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: "#242021" }}
           >
-            {cardPending ? "Redirecting…" : "Or pay with card"}
+            {cardPending ? "Redirecting…" : "Checkout"}
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={handleManualCheckout}
-          disabled={cardPending || !hasItems}
-          className="w-full bg-black text-white text-xl font-medium py-4 flex items-center justify-center gap-2 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <span>{cardPending ? "Redirecting…" : hasItems ? "Checkout" : "Add items to order"}</span>
-          {!cardPending && hasItems && <span>${(subtotalCents / 100).toFixed(2)}</span>}
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

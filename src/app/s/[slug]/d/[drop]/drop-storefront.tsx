@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckoutFooter } from "./checkout-footer";
 import { ThemeListener } from "@/components/theme-listener";
@@ -66,29 +66,15 @@ function useCountdown(target: string) {
   return label;
 }
 
-export function DropStorefront({ drop, partner, items, autoPlay }: Props & { autoPlay?: boolean }) {
+export function DropStorefront({ drop, partner, items }: Props) {
   const searchParams = useSearchParams();
   const preloadedPhone = searchParams.get("phone") ?? "";
 
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [activeIndex, setActiveIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
 
   const ordersOpen = drop.state === "orders_open";
   const countdown = useCountdown(drop.order_window_ends_at);
   const fontFamily = fontFamilies[partner.font_style] ?? fontFamilies.sans;
-
-  useEffect(() => {
-    if (!autoPlay || items.length <= 1) return;
-    const id = setInterval(() => {
-      setActiveIndex((prev) => {
-        const next = (prev + 1) % items.length;
-        carouselRef.current?.scrollTo({ left: next * (carouselRef.current.offsetWidth * 0.82 + 12), behavior: "smooth" });
-        return next;
-      });
-    }, 2200);
-    return () => clearInterval(id);
-  }, [autoPlay, items.length]);
 
   function updateQty(id: string, delta: number, max: number) {
     setCart((prev) => {
@@ -114,21 +100,6 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
   const subtotalCents = cartLines.reduce((s, l) => s + l.price_cents * l.qty, 0);
   const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
 
-  function handleCarouselScroll() {
-    const el = carouselRef.current;
-    if (!el) return;
-    // Each card is 82vw wide + 12px gap; snap offset starts at 5vw
-    const cardWidth = el.offsetWidth * 0.82 + 12;
-    setActiveIndex(Math.round((el.scrollLeft) / cardWidth));
-  }
-
-  function scrollToCard(i: number) {
-    const el = carouselRef.current;
-    if (!el) return;
-    const cardWidth = el.offsetWidth * 0.82 + 12;
-    el.scrollTo({ left: i * cardWidth, behavior: "smooth" });
-  }
-
   const pickupDate = new Date(drop.pickup_window_starts_at).toLocaleDateString("en-US", {
     month: "short", day: "numeric",
   });
@@ -136,7 +107,7 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
   return (
     <div
       data-theme-root
-      className="min-h-screen pb-10"
+      className="min-h-screen"
       style={{
         backgroundColor: partner.bg_color,
         color: partner.fg_color,
@@ -144,237 +115,151 @@ export function DropStorefront({ drop, partner, items, autoPlay }: Props & { aut
         ["--color-bg" as string]: partner.bg_color,
         ["--color-fg" as string]: partner.fg_color,
         ["--color-accent" as string]: partner.accent_color,
+        paddingBottom: cartCount > 0 ? "128px" : "48px",
       }}
     >
       <ThemeListener />
 
-      {/* Sticky header with brand + cart */}
+      {/* Sticky header */}
       <div
         className="sticky top-0 z-20 flex items-center justify-between px-5 py-3"
         style={{ backgroundColor: partner.bg_color }}
       >
-        <div>
-          {partner.logo_url ? (
-            <img
-              src={partner.logo_url}
-              alt={partner.business_name}
-              className="h-5 w-auto object-contain mix-blend-multiply"
-            />
-          ) : (
-            <p className="text-xs font-semibold tracking-[0.2em] uppercase opacity-70">
-              {partner.business_name}
-            </p>
-          )}
-        </div>
-
-        {/* Cart pill — only visible when cart has items */}
-        <div
-          className="transition-all duration-200 overflow-hidden"
-          style={{ maxWidth: cartCount > 0 ? "160px" : "0px", opacity: cartCount > 0 ? 1 : 0 }}
-        >
-          <button
-            type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-sm font-semibold whitespace-nowrap"
-            style={{ backgroundColor: "var(--color-accent)" }}
-          >
-            <span>{cartCount} item{cartCount !== 1 ? "s" : ""}</span>
-            <span>·</span>
-            <span>${(subtotalCents / 100).toFixed(2)}</span>
-          </button>
-        </div>
+        {partner.logo_url ? (
+          <img
+            src={partner.logo_url}
+            alt={partner.business_name}
+            className="h-5 w-auto object-contain mix-blend-multiply"
+          />
+        ) : (
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase opacity-70">
+            {partner.business_name}
+          </p>
+        )}
       </div>
 
-      {/* Hero text — inside padded container */}
-      <div className="max-w-sm mx-auto px-5 pt-2 pb-4 flex flex-col gap-4">
-        <div data-name="Hero" className="flex flex-col items-center gap-3 text-center">
-          <div data-name="Text" className="flex flex-col items-center gap-2 w-full">
-            <p className="text-lg font-semibold leading-snug">{drop.name}</p>
-            <p className="text-sm opacity-70">{pickupDate}, {partner.pickup_address}</p>
-            {drop.description && (
-              <p className="text-base opacity-70 leading-relaxed">{drop.description}</p>
-            )}
-            {ordersOpen && countdown && (
-              <p
-                className="text-base underline font-mono"
-                style={{ color: "var(--color-accent)" }}
-              >
-                Hurry! Orders close in {countdown}
-              </p>
-            )}
-            {!ordersOpen && (
-              <p className="text-sm opacity-60">
-                {drop.state === "scheduled" ? "Orders aren't open yet." : "Orders are closed for this drop."}
-              </p>
-            )}
-          </div>
-        </div>
+      {/* Hero */}
+      <div className="mx-2 pt-2 pb-6 flex flex-col gap-2 text-center">
+        <p className="text-lg font-semibold leading-snug">{drop.name}</p>
+        <p className="text-sm opacity-60">{pickupDate} · {partner.pickup_address}</p>
+        {drop.description && (
+          <p className="text-base opacity-70 leading-relaxed px-4">{drop.description}</p>
+        )}
+        {ordersOpen && countdown && (
+          <p className="text-base font-mono" style={{ color: "var(--color-accent)" }}>
+            Orders close in {countdown}
+          </p>
+        )}
+        {!ordersOpen && (
+          <p className="text-sm opacity-50">
+            {drop.state === "scheduled" ? "Orders aren't open yet." : "Orders are closed for this drop."}
+          </p>
+        )}
       </div>
 
-      {/* Full-bleed carousel */}
+      {/* Item list — no card backgrounds, just stacked */}
       {items.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div
-            ref={carouselRef}
-            onScroll={handleCarouselScroll}
-            className="flex overflow-x-auto snap-x snap-mandatory"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              paddingLeft: "5vw",
-              paddingRight: "5vw",
-              gap: "12px",
-            } as React.CSSProperties}
-          >
-            {items.map((item) => {
-              const qty = cart[item.id] ?? 0;
-              const soldOut = item.available_qty === 0;
-              const inCart = qty > 0;
+        <div className="mx-2 flex flex-col divide-y" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+          {items.map((item) => {
+            const qty = cart[item.id] ?? 0;
+            const soldOut = item.available_qty === 0;
+            const inCart = qty > 0;
 
-              return (
-                <div
-                  key={item.id}
-                  data-name="Card"
-                  className="flex-none snap-start bg-white rounded-[20px] p-4 flex flex-col gap-2.5"
-                  style={{
-                    width: "82vw",
-                    boxShadow: "0px 4px 16px -8px rgba(0,0,0,0.1), 0px 3px 12px -4px rgba(0,0,0,0.1), 0px 2px 3px -2px rgba(0,0,51,0.06)",
-                  }}
-                >
-                  {inCart ? (
-                    // ── IN CART: text at top, controls row at bottom ──
-                    <>
-                      <div data-name="text" className="flex flex-col gap-2 pb-2">
-                        <p className="text-[18px] font-semibold leading-snug text-black">{item.item_name}</p>
-                        {item.description && (
-                          <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
-                        )}
+            return (
+              <div key={item.id} className="py-4">
+                {/* Photo + controls row */}
+                <div className="flex gap-2">
+                  {/* Photo — square, ~62% width */}
+                  <div
+                    className="shrink-0 rounded-[4px] overflow-hidden bg-[#f0efee]"
+                    style={{ width: "62%", aspectRatio: "1 / 1" }}
+                  >
+                    {item.photo_url ? (
+                      <img
+                        src={item.photo_url}
+                        alt={item.item_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center opacity-20 text-4xl">
+                        🍞
                       </div>
-                      <div data-name="controls" className="flex gap-2.5 h-[84px]">
-                        {/* stacked +/- */}
-                        <div className="w-[84px] shrink-0 flex flex-col gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateQty(item.id, 1, item.available_qty)}
-                            disabled={!ordersOpen || soldOut || qty >= item.available_qty}
-                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
-                          >
-                            <span className="text-white text-xl leading-none select-none">+</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => updateQty(item.id, -1, item.available_qty)}
-                            disabled={!ordersOpen}
-                            className="flex-1 bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
-                          >
-                            <span className="text-white text-xl leading-none select-none">−</span>
-                          </button>
-                        </div>
-                        {/* qty display */}
-                        <div className="w-[84px] shrink-0 bg-[#e4e0d6] rounded-[4px] flex items-center justify-center">
-                          <span className="text-[28px] font-normal text-[#242021]">{qty}</span>
-                        </div>
-                        {/* add to cart button */}
-                        <div
-                          data-name="add-to-cart"
-                          className="flex-1 rounded-[4px] px-4 py-2.5 flex flex-col items-start justify-end"
-                          style={{ backgroundColor: soldOut ? "#c0bfbe" : "var(--color-accent)" }}
+                    )}
+                  </div>
+
+                  {/* Right controls */}
+                  <div className="flex-1 flex flex-col">
+                    {/* Badge */}
+                    <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
+                      {soldOut ? "Sold out" : `${item.available_qty} left`}
+                    </span>
+
+                    {/* Price + qty indicator */}
+                    <div className="flex-1 flex flex-col justify-center py-3">
+                      <p className="font-mono text-[24px] text-[#242021] leading-[24px]">
+                        ${(item.price_cents / 100).toFixed(2)}
+                      </p>
+                      {inCart && (
+                        <p
+                          className="font-mono text-[24px] leading-[24px] mt-0.5"
+                          style={{ color: "var(--color-accent)" }}
                         >
-                          <p className="text-white text-[11px] font-bold tracking-[0.22px] uppercase opacity-70 leading-none">
-                            {soldOut ? "SOLD OUT" : "ADD TO CART"}
-                          </p>
-                          <p className="text-white text-[28px] font-medium leading-none mt-1">
-                            ${(qty * item.price_cents / 100).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    // ── NOT IN CART: photo left, controls right, text below ──
-                    <>
-                      <div data-name="items" className="flex gap-2.5 items-end">
-                        {/* photo */}
-                        <div
-                          data-name="item-photo"
-                          className="shrink-0 rounded-[4px] overflow-hidden bg-[#f0efee]"
-                          style={{ width: "57%", aspectRatio: "1 / 1" }}
+                          x{qty}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* ± buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateQty(item.id, -1, item.available_qty)}
+                        disabled={!ordersOpen || qty === 0}
+                        className="flex-1 h-[56px] rounded-[4px] flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed"
+                        style={{
+                          backgroundColor: inCart ? "#242021" : "#e2e2e2",
+                          opacity: !ordersOpen || qty === 0 ? (inCart ? 0.3 : 1) : 1,
+                        }}
+                      >
+                        <span
+                          className="text-xl leading-none select-none"
+                          style={{ color: inCart ? "#fff" : "#242021" }}
                         >
-                          {item.photo_url ? (
-                            <img src={item.photo_url} alt={item.item_name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center opacity-20 text-3xl">🍞</div>
-                          )}
-                        </div>
-                        {/* right controls */}
-                        <div className="flex-1 self-stretch flex flex-col justify-end gap-0">
-                          {/* badge */}
-                          <span className="self-start text-sm font-medium px-2.5 py-1 rounded-[4px] bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)] mb-auto">
-                            {soldOut ? "Sold out" : `${item.available_qty} left`}
-                          </span>
-                          {/* price */}
-                          <p className="font-mono text-[24px] text-[#242021] py-3 leading-none">
-                            ${(item.price_cents / 100).toFixed(2)}
-                          </p>
-                          {/* ± buttons side by side */}
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled
-                              className="flex-1 h-[56px] bg-[#e2e2e2] rounded-[4px] flex items-center justify-center opacity-40 cursor-not-allowed"
-                            >
-                              <span className="text-[#242021] text-xl leading-none select-none">−</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateQty(item.id, 1, item.available_qty)}
-                              disabled={!ordersOpen || soldOut}
-                              className="flex-1 h-[56px] bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
-                            >
-                              <span className="text-white text-xl leading-none select-none">+</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      {/* text below photo+controls */}
-                      <div data-name="text" className="flex flex-col gap-1 pt-1">
-                        <p className="text-[18px] font-semibold leading-snug text-black">{item.item_name}</p>
-                        {item.description && (
-                          <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
-                        )}
-                      </div>
-                    </>
+                          −
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateQty(item.id, 1, item.available_qty)}
+                        disabled={!ordersOpen || soldOut || qty >= item.available_qty}
+                        className="flex-1 h-[56px] bg-[#242021] rounded-[4px] flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
+                      >
+                        <span className="text-white text-xl leading-none select-none">+</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Name + description */}
+                <div className="mt-3 flex flex-col gap-1">
+                  <p className="text-[18px] font-semibold leading-snug text-black">{item.item_name}</p>
+                  {item.description && (
+                    <p className="text-base opacity-60 leading-relaxed text-black">{item.description}</p>
                   )}
                 </div>
-              );
-            })}
-          </div>
-
-          {/* pips */}
-          {items.length > 1 && (
-            <div data-name="carouselpips" className="flex items-center justify-center gap-2">
-              {items.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => scrollToCard(i)}
-                  className="w-2 h-2 rounded-full transition-colors"
-                  style={{
-                    backgroundColor: i === activeIndex
-                      ? "var(--color-accent)"
-                      : "rgba(0,0,0,0.15)",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          <CheckoutFooter
-            drop={{ id: drop.id, slug: drop.slug, state: drop.state, order_window_ends_at: drop.order_window_ends_at }}
-            partner={{ slug: partner.slug, stripe_account_id: partner.stripe_account_id }}
-            cartLines={cartLines}
-            subtotalCents={subtotalCents}
-          />
+              </div>
+            );
+          })}
         </div>
       )}
+
+      {/* Docked checkout footer */}
+      <CheckoutFooter
+        drop={{ id: drop.id, slug: drop.slug, state: drop.state, order_window_ends_at: drop.order_window_ends_at }}
+        partner={{ slug: partner.slug, stripe_account_id: partner.stripe_account_id }}
+        cartLines={cartLines}
+        subtotalCents={subtotalCents}
+      />
     </div>
   );
 }

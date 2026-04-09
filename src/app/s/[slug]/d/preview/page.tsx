@@ -71,7 +71,6 @@ export default async function DropPreviewPage({
         stripe_account_id: "",
       }}
       items={DUMMY_ITEMS}
-      autoPlay
     />
   );
 }
