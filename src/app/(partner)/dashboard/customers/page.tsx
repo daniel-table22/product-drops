@@ -1,8 +1,21 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 
-export default async function CustomersPage() {
+type Filter = "all" | "subscribed" | "not_subscribed";
+
+export default async function AudiencePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
+  const { filter: filterRaw } = await searchParams;
+  const filter: Filter =
+    filterRaw === "subscribed" ? "subscribed"
+    : filterRaw === "not_subscribed" ? "not_subscribed"
+    : "all";
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,78 +29,101 @@ export default async function CustomersPage() {
 
   if (!partner) redirect("/onboarding");
 
-  // Fetch all drops for this partner to get their IDs
-  const { data: drops } = await supabase
-    .from("drops")
-    .select("id")
+  let query = supabase
+    .from("subscribers")
+    .select("id, phone, opted_in, created_at")
+    .eq("partner_id", partner.id)
+    .order("created_at", { ascending: false });
+
+  if (filter === "subscribed") query = query.eq("opted_in", true);
+  if (filter === "not_subscribed") query = query.eq("opted_in", false);
+
+  const { data: subscribers } = await query;
+  const all = subscribers ?? [];
+
+  // Counts for tab badges
+  const { count: subscribedCount } = await supabase
+    .from("subscribers")
+    .select("id", { count: "exact", head: true })
+    .eq("partner_id", partner.id)
+    .eq("opted_in", true);
+
+  const { count: totalCount } = await supabase
+    .from("subscribers")
+    .select("id", { count: "exact", head: true })
     .eq("partner_id", partner.id);
 
-  const dropIds = drops?.map((d) => d.id) ?? [];
-
-  // Fetch all orders across those drops
-  const { data: orders } = dropIds.length
-    ? await supabase
-        .from("orders")
-        .select("customer_name, customer_email, customer_phone, total_cents")
-        .in("drop_id", dropIds)
-    : { data: [] };
-
-  // Aggregate by email
-  const customerMap = new Map<
-    string,
-    { name: string; email: string; phone: string | null; orderCount: number; totalCents: number }
-  >();
-
-  for (const o of orders ?? []) {
-    const existing = customerMap.get(o.customer_email);
-    if (existing) {
-      existing.orderCount += 1;
-      existing.totalCents += o.total_cents;
-    } else {
-      customerMap.set(o.customer_email, {
-        name: o.customer_name,
-        email: o.customer_email,
-        phone: o.customer_phone,
-        orderCount: 1,
-        totalCents: o.total_cents,
-      });
-    }
-  }
-
-  const customers = Array.from(customerMap.values()).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  const tabs: { label: string; value: Filter; count?: number }[] = [
+    { label: "All", value: "all", count: totalCount ?? 0 },
+    { label: "Subscribed", value: "subscribed", count: subscribedCount ?? 0 },
+    { label: "Not subscribed", value: "not_subscribed", count: (totalCount ?? 0) - (subscribedCount ?? 0) },
+  ];
 
   return (
     <div className="px-8 py-10 space-y-6">
       <div>
-        <PageHeader title="Customers" size="large" />
-        <p className="mt-1 text-size-2 text-neutral-10">{customers.length} unique customers from orders</p>
+        <PageHeader title="Audience" size="large" />
+        <p className="mt-1 text-size-2 text-neutral-10">
+          People who have opted in to hear from you
+        </p>
       </div>
 
-      {customers.length === 0 ? (
-        <p className="text-size-2 text-neutral-10">No customers yet — they'll appear here once orders come in.</p>
+      {/* Toggle tabs */}
+      <div className="flex gap-1 border-b border-neutral-6">
+        {tabs.map((tab) => (
+          <Link
+            key={tab.value}
+            href={tab.value === "all" ? "/dashboard/customers" : `/dashboard/customers?filter=${tab.value}`}
+            className={[
+              "px-3 py-2 text-size-2 font-medium border-b-2 -mb-px transition-colors",
+              filter === tab.value
+                ? "border-neutral-12 text-neutral-12"
+                : "border-transparent text-neutral-10 hover:text-neutral-12",
+            ].join(" ")}
+          >
+            {tab.label}
+            {tab.count !== undefined && (
+              <span className="ml-1.5 text-size-1 text-neutral-10">{tab.count}</span>
+            )}
+          </Link>
+        ))}
+      </div>
+
+      {all.length === 0 ? (
+        <p className="text-size-2 text-neutral-10">
+          {filter === "all"
+            ? "No one in your audience yet — they'll appear when people sign up on your storefront."
+            : filter === "subscribed"
+            ? "No subscribed contacts yet."
+            : "Everyone is subscribed."}
+        </p>
       ) : (
         <div className="border border-neutral-6 rounded-4 overflow-hidden">
           <table className="w-full text-size-2">
             <thead className="bg-neutral-2 border-b border-neutral-6">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-neutral-11">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-11">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Phone</th>
-                <th className="px-4 py-3 text-right font-medium text-neutral-11">Orders</th>
-                <th className="px-4 py-3 text-right font-medium text-neutral-11">Total spent</th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-11">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-11">Joined</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-6">
-              {customers.map((c) => (
-                <tr key={c.email} className="bg-surface hover:bg-neutral-2 transition-colors">
-                  <td className="px-4 py-3 text-neutral-12 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-neutral-11">{c.email}</td>
-                  <td className="px-4 py-3 text-neutral-11">{c.phone ?? "—"}</td>
-                  <td className="px-4 py-3 text-right text-neutral-12">{c.orderCount}</td>
-                  <td className="px-4 py-3 text-right text-neutral-12">
-                    ${(c.totalCents / 100).toFixed(2)}
+              {all.map((s) => (
+                <tr key={s.id} className="bg-surface hover:bg-neutral-2 transition-colors">
+                  <td className="px-4 py-3 text-neutral-12 font-medium font-mono">{s.phone}</td>
+                  <td className="px-4 py-3">
+                    {s.opted_in ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
+                        Subscribed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-neutral-3 text-neutral-10">
+                        Unsubscribed
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-10">
+                    {new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </td>
                 </tr>
               ))}

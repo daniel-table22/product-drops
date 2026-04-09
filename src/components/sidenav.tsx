@@ -24,7 +24,7 @@ const mainNav: NavItem = { label: "Dashboard", href: "/dashboard", icon: LayoutG
 const programItems: NavItem[] = [
   { label: "Drops",     href: "/dashboard/drops",     icon: CalendarDays },
   { label: "Orders",    href: "/dashboard/orders",    icon: ShoppingBag },
-  { label: "Customers", href: "/dashboard/customers", icon: Users },
+  { label: "Audience",  href: "/dashboard/customers", icon: Users },
   { label: "Products",  href: "/dashboard/products",  icon: Package },
   { label: "Store",     href: "/dashboard/store",     icon: Store },
   { label: "Settings",  href: "/dashboard/settings",  icon: Settings },

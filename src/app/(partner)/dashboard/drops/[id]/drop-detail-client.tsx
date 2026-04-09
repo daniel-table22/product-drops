@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
+import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI, seedOrders } from "./actions";
 import { updateDrop } from "../actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Separator } from "@/components/ui/separator";
@@ -62,6 +62,8 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const formRef = useRef<HTMLFormElement>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [seedPending, setSeedPending] = useState(false);
+  const [seedResult, setSeedResult] = useState<{ created: number } | null>(null);
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);
@@ -175,9 +177,8 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
       >
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="marketing">Marketing</TabsTrigger>
+          <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
-          <TabsTrigger value="pack-list">Pack list</TabsTrigger>
           <TabsTrigger value="prep-list">Prep list</TabsTrigger>
         </TabsList>
 
@@ -339,101 +340,87 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
         </TabsContent>
 
         {/* ── Orders ── */}
-        <TabsContent value="orders" className="pt-2">
+        <TabsContent value="orders" className="pt-2 space-y-4">
+          {/* Seed buttons — only shown before/during orders */}
+          {(drop.state === "orders_open" || drop.state === "scheduled") && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={seedPending}
+                onClick={async () => {
+                  setSeedPending(true); setSeedResult(null);
+                  const r = await seedOrders(drop.id, "partial");
+                  if ("created" in r && r.created != null) setSeedResult({ created: r.created });
+                  setSeedPending(false);
+                }}>
+                {seedPending ? "Adding…" : "✦ Autofill partial"}
+              </Button>
+              <Button size="sm" variant="outline" disabled={seedPending}
+                onClick={async () => {
+                  setSeedPending(true); setSeedResult(null);
+                  const r = await seedOrders(drop.id, "full");
+                  if ("created" in r && r.created != null) setSeedResult({ created: r.created });
+                  setSeedPending(false);
+                }}>
+                {seedPending ? "Adding…" : "✦ Autofill all"}
+              </Button>
+              {seedResult && (
+                <p className="text-size-1 text-neutral-10">{seedResult.created} order{seedResult.created !== 1 ? "s" : ""} added</p>
+              )}
+            </div>
+          )}
+
           {orders.length === 0 ? (
             <p className="text-size-2 text-neutral-10">No orders yet.</p>
           ) : (
-            <div className="border border-neutral-6 rounded-4 overflow-hidden">
-              <table className="w-full text-size-2">
-                <thead className="bg-neutral-2 border-b border-neutral-6">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium text-neutral-11">Customer</th>
-                    <th className="px-4 py-3 text-left font-medium text-neutral-11">Items</th>
-                    <th className="px-4 py-3 text-right font-medium text-neutral-11">Total</th>
-                    <th className="px-4 py-3 text-left font-medium text-neutral-11">Status</th>
-                    <th className="px-4 py-3 text-right font-medium text-neutral-11">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-6">
-                  {orders.map((order) => (
-                    <tr key={order.id} className="bg-surface hover:bg-neutral-2 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-neutral-12">{order.customer_name}</p>
-                        <p className="text-neutral-10">{order.customer_email}</p>
-                        {order.customer_phone && (
-                          <p className="text-neutral-10">{order.customer_phone}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-11">
-                        {order.order_items.map((oi) => `${oi.qty}× ${oi.item_name}`).join(", ")}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium text-neutral-12">
-                        ${(order.total_cents / 100).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3">
+            <div className="space-y-3 max-w-2xl">
+              {orders.filter((o) => o.state !== "no_show").map((order) => {
+                const pickupOpen = new Date() >= new Date(drop.pickup_window_starts_at);
+                return (
+                  <div key={order.id} className="border border-neutral-6 rounded-4 bg-surface overflow-hidden">
+                    {/* Order header */}
+                    <div className="flex items-start justify-between gap-4 px-4 py-3 border-b border-neutral-6 bg-neutral-2">
+                      <div>
+                        <p className="font-medium text-neutral-12 text-size-2">{order.customer_name}</p>
+                        <p className="text-size-1 text-neutral-10">
+                          {order.customer_email}{order.customer_phone ? ` · ${order.customer_phone}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-size-2 font-medium text-neutral-12">${(order.total_cents / 100).toFixed(2)}</span>
                         <OrderStateBadge state={order.state} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          {order.state === "paid" && (
-                            <form action={() => handleOrderState(order.id, "ready")}>
-                              <Button size="sm" variant="outline" type="submit">Mark ready</Button>
-                            </form>
-                          )}
-                          {order.state === "ready" && (
-                            <form action={() => handleOrderState(order.id, "picked_up")}>
-                              <Button size="sm" variant="outline" type="submit">Mark picked up</Button>
-                            </form>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        {order.state === "paid" && (
+                          <form action={() => handleOrderState(order.id, "ready")}>
+                            <Button size="sm" variant="outline" type="submit">Mark ready</Button>
+                          </form>
+                        )}
+                        {order.state === "ready" && (
+                          <form action={() => handleOrderState(order.id, "picked_up")}>
+                            <Button size="sm" variant="outline" type="submit"
+                              disabled={!pickupOpen}
+                              title={!pickupOpen ? `Pickup opens ${new Date(drop.pickup_window_starts_at).toLocaleDateString()}` : undefined}>
+                              Picked up
+                            </Button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                    {/* Line items */}
+                    <ul className="divide-y divide-neutral-6">
+                      {order.order_items.map((oi) => (
+                        <li key={oi.id} className="flex items-center justify-between px-4 py-2.5 text-size-2">
+                          <span className="text-neutral-11">{oi.qty}× {oi.item_name}</span>
+                          <span className="text-neutral-10">${(oi.price_cents * oi.qty / 100).toFixed(2)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
 
-        {/* ── Pack list ── */}
-        <TabsContent value="pack-list" className="pt-2 space-y-4">
-          <p className="text-size-2 text-neutral-10">
-            Aggregated totals across all paid orders. Print this for kitchen prep.
-          </p>
-          {packMap.size === 0 ? (
-            <p className="text-size-2 text-neutral-10">No orders to aggregate yet.</p>
-          ) : (
-            <div className="border border-neutral-6 rounded-4 overflow-hidden max-w-sm print:border-0">
-              <table className="w-full text-size-2">
-                <thead className="bg-neutral-2 border-b border-neutral-6 print:bg-white">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium text-neutral-11">Item</th>
-                    <th className="px-4 py-3 text-right font-medium text-neutral-11">Total qty</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-6">
-                  {Array.from(packMap.entries()).map(([name, qty]) => (
-                    <tr key={name} className="bg-surface">
-                      <td className="px-4 py-3 font-medium text-neutral-12">{name}</td>
-                      <td className="px-4 py-3 text-right text-neutral-12 text-size-4 font-semibold">
-                        {qty}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <button
-            onClick={() => window.print()}
-            className="text-size-2 text-neutral-10 hover:text-neutral-12 underline print:hidden"
-          >
-            Print
-          </button>
-        </TabsContent>
-
-        {/* ── Marketing ── */}
-        <TabsContent value="marketing" className="space-y-8 pt-2">
+        {/* ── Announcements ── */}
+        <TabsContent value="announcements" className="space-y-8 pt-2">
           <div className="space-y-3 max-w-xl">
             <div>
               <h2 className="text-size-3 font-medium text-neutral-12">SMS blast</h2>
@@ -518,39 +505,31 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
         {/* ── Prep list ── */}
         <TabsContent value="prep-list" className="pt-2 space-y-4">
           <p className="text-size-2 text-neutral-10">
-            Per-order breakdown. Print this to label each bag.
+            Aggregated totals across all paid orders — what you need to make.
           </p>
-          {orders.filter((o) => o.state !== "no_show").length === 0 ? (
-            <p className="text-size-2 text-neutral-10">No orders to show yet.</p>
+          {packMap.size === 0 ? (
+            <p className="text-size-2 text-neutral-10">No orders to aggregate yet.</p>
           ) : (
-            <div className="space-y-3 max-w-sm">
-              {orders
-                .filter((o) => o.state !== "no_show")
-                .map((order) => (
-                  <div
-                    key={order.id}
-                    className="border border-neutral-6 rounded-4 p-4 bg-surface space-y-1"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-neutral-12">{order.customer_name}</p>
-                      <OrderStateBadge state={order.state} />
-                    </div>
-                    <p className="text-size-1 text-neutral-10">{order.customer_email}</p>
-                    <ul className="mt-2 space-y-0.5">
-                      {order.order_items.map((oi) => (
-                        <li key={oi.id} className="text-size-2 text-neutral-12">
-                          {oi.qty}× {oi.item_name}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+            <div className="border border-neutral-6 rounded-4 overflow-hidden max-w-sm print:border-0">
+              <table className="w-full text-size-2">
+                <thead className="bg-neutral-2 border-b border-neutral-6 print:bg-white">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-neutral-11">Item</th>
+                    <th className="px-4 py-3 text-right font-medium text-neutral-11">Total qty</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-6">
+                  {Array.from(packMap.entries()).map(([name, qty]) => (
+                    <tr key={name} className="bg-surface">
+                      <td className="px-4 py-3 font-medium text-neutral-12">{name}</td>
+                      <td className="px-4 py-3 text-right text-neutral-12 text-size-4 font-semibold">{qty}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-          <button
-            onClick={() => window.print()}
-            className="text-size-2 text-neutral-10 hover:text-neutral-12 underline print:hidden"
-          >
+          <button onClick={() => window.print()} className="text-size-2 text-neutral-10 hover:text-neutral-12 underline print:hidden">
             Print
           </button>
         </TabsContent>
