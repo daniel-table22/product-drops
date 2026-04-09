@@ -5,12 +5,12 @@ import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
   CalendarDays,
-  ShoppingBag,
   Users,
   Package,
   Store,
   Settings,
   ExternalLink,
+  Megaphone,
 } from "lucide-react";
 
 type NavItem = {
@@ -22,12 +22,15 @@ type NavItem = {
 const mainNav: NavItem = { label: "Dashboard", href: "/dashboard", icon: LayoutGrid };
 
 const programItems: NavItem[] = [
-  { label: "Drops",     href: "/dashboard/drops",     icon: CalendarDays },
-  { label: "Orders",    href: "/dashboard/orders",    icon: ShoppingBag },
-  { label: "Audience",  href: "/dashboard/customers", icon: Users },
-  { label: "Products",  href: "/dashboard/products",  icon: Package },
-  { label: "Store",     href: "/dashboard/store",     icon: Store },
-  { label: "Settings",  href: "/dashboard/settings",  icon: Settings },
+  { label: "Drops",    href: "/dashboard/drops",     icon: CalendarDays },
+  { label: "Audience", href: "/dashboard/customers", icon: Users },
+  { label: "Items",    href: "/dashboard/products",  icon: Package },
+  { label: "Store",    href: "/dashboard/store",     icon: Store },
+  { label: "Settings", href: "/dashboard/settings",  icon: Settings },
+];
+
+const marketingItems: NavItem[] = [
+  { label: "Marketing", href: "/dashboard/marketing", icon: Megaphone },
 ];
 
 type ActiveDrop = { id: string; name: string; slug: string };
@@ -118,6 +121,22 @@ export function Sidenav({
           <SectionHeading>Program</SectionHeading>
           <div className="flex flex-col">
             {programItems.map((item) => (
+              <NavButton
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                active={isActive(item.href)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Marketing */}
+        <div>
+          <SectionHeading>Marketing</SectionHeading>
+          <div className="flex flex-col">
+            {marketingItems.map((item) => (
               <NavButton
                 key={item.href}
                 href={item.href}
