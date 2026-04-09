@@ -136,9 +136,10 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
     }
   }
 
-  const visible = drop.state === "orders_open" && cartCount > 0;
+  const ordersOpen = drop.state === "orders_open";
+  const hasItems = cartCount > 0;
 
-  if (!visible) return null;
+  if (!ordersOpen) return null;
 
   return (
     <div className="px-5 pt-4 pb-2 flex flex-col gap-2">
@@ -151,7 +152,7 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
           <button
             type="button"
             onClick={handleApplePay}
-            disabled={applePayPending}
+            disabled={applePayPending || !hasItems}
             aria-label="Pay with Apple Pay"
             style={{
               WebkitAppearance: "-apple-pay-button" as React.CSSProperties["WebkitAppearance"],
@@ -160,15 +161,15 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
               width: "100%",
               height: "48px",
               borderRadius: "8px",
-              opacity: applePayPending ? 0.6 : 1,
-              cursor: applePayPending ? "not-allowed" : "pointer",
+              opacity: applePayPending || !hasItems ? 0.35 : 1,
+              cursor: applePayPending || !hasItems ? "not-allowed" : "pointer",
             }}
           />
           <button
             type="button"
             onClick={handleManualCheckout}
-            disabled={cardPending}
-            className="w-full text-center text-sm text-neutral-500 underline py-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={cardPending || !hasItems}
+            className="w-full text-center text-sm text-neutral-500 underline py-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {cardPending ? "Redirecting…" : "Or pay with card"}
           </button>
@@ -177,11 +178,11 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
         <button
           type="button"
           onClick={handleManualCheckout}
-          disabled={cardPending}
-          className="w-full bg-black text-white text-xl font-medium py-4 flex items-center justify-center gap-2 rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={cardPending || !hasItems}
+          className="w-full bg-black text-white text-xl font-medium py-4 flex items-center justify-center gap-2 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span>{cardPending ? "Redirecting…" : "Checkout"}</span>
-          {!cardPending && <span>${(subtotalCents / 100).toFixed(2)}</span>}
+          <span>{cardPending ? "Redirecting…" : hasItems ? "Checkout" : "Add items to order"}</span>
+          {!cardPending && hasItems && <span>${(subtotalCents / 100).toFixed(2)}</span>}
         </button>
       )}
     </div>

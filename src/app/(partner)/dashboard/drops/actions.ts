@@ -40,6 +40,10 @@ export async function createDrop(
   const pickup_window_starts_at = formData.get("pickup_window_starts_at") as string;
   const pickup_window_ends_at = formData.get("pickup_window_ends_at") as string;
   const itemsJson = (formData.get("items") as string) || "[]";
+  const announceDaysRaw = formData.get("announce_days_before") as string;
+  const reminderDaysRaw = formData.get("reminder_days_before") as string;
+  const announce_days_before = announceDaysRaw ? parseInt(announceDaysRaw) : null;
+  const reminder_days_before = reminderDaysRaw ? parseInt(reminderDaysRaw) : null;
 
   if (!name?.trim()) return { error: "Drop name is required." };
   if (!order_window_starts_at || !order_window_ends_at) return { error: "Order window dates are required." };
@@ -66,6 +70,8 @@ export async function createDrop(
       order_window_ends_at: new Date(order_window_ends_at).toISOString(),
       pickup_window_starts_at: new Date(pickup_window_starts_at).toISOString(),
       pickup_window_ends_at: new Date(pickup_window_ends_at).toISOString(),
+      announce_days_before,
+      reminder_days_before,
     })
     .select("id")
     .single();

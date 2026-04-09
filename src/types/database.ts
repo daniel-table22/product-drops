@@ -58,6 +58,7 @@ export type Database = {
       }
       drops: {
         Row: {
+          announce_days_before: number | null
           blast_count: number
           cancelled_at: string | null
           created_at: string
@@ -70,10 +71,12 @@ export type Database = {
           pickup_window_ends_at: string
           pickup_window_starts_at: string
           published_at: string | null
+          reminder_days_before: number | null
           slug: string
           state: Database["public"]["Enums"]["drop_state"]
         }
         Insert: {
+          announce_days_before?: number | null
           blast_count?: number
           cancelled_at?: string | null
           created_at?: string
@@ -86,10 +89,12 @@ export type Database = {
           pickup_window_ends_at: string
           pickup_window_starts_at: string
           published_at?: string | null
+          reminder_days_before?: number | null
           slug: string
           state?: Database["public"]["Enums"]["drop_state"]
         }
         Update: {
+          announce_days_before?: number | null
           blast_count?: number
           cancelled_at?: string | null
           created_at?: string
@@ -102,6 +107,7 @@ export type Database = {
           pickup_window_ends_at?: string
           pickup_window_starts_at?: string
           published_at?: string | null
+          reminder_days_before?: number | null
           slug?: string
           state?: Database["public"]["Enums"]["drop_state"]
         }

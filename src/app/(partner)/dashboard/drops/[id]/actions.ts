@@ -27,6 +27,23 @@ export async function updateOrderState(orderId: string, dropId: string, newState
   revalidatePath(`/dashboard/drops/${dropId}`);
 }
 
+export async function updateBlastSettings(
+  dropId: string,
+  announceDaysBefore: number | null,
+  reminderDaysBefore: number | null,
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("drops")
+    .update({ announce_days_before: announceDaysBefore, reminder_days_before: reminderDaysBefore })
+    .eq("id", dropId);
+
+  revalidatePath(`/dashboard/drops/${dropId}`);
+}
+
 export async function publishDrop(dropId: string) {
   const supabase = await createClient();
 

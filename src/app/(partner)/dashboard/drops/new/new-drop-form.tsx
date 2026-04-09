@@ -42,6 +42,11 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function fmtBlastDate(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+    " at " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
 function toDateTimeLocal(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -60,6 +65,8 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
   const [orderEnd, setOrderEnd] = useState("");
   const [pickupStart, setPickupStart] = useState("");
   const [pickupEnd, setPickupEnd] = useState("");
+  const [announceDays, setAnnounceDays] = useState("5");
+  const [reminderDays, setReminderDays] = useState("dont");
 
   const [itemPrices, setItemPrices] = useState<Record<string, string>>(() =>
     Object.fromEntries(libraryItems.map((i) => [i.id, (i.default_price_cents / 100).toFixed(2)]))
@@ -224,6 +231,60 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
             )}
           </div>
         )}
+
+        <input type="hidden" name="announce_days_before" value={announceDays === "dont" ? "" : announceDays} />
+        <input type="hidden" name="reminder_days_before" value={reminderDays === "dont" ? "" : reminderDays} />
+
+        <fieldset className="space-y-3">
+          <legend className="text-size-2 font-medium text-neutral-12">SMS blast schedule</legend>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-size-2 text-neutral-11 w-28 shrink-0">Announcement</span>
+              <select
+                value={announceDays}
+                onChange={(e) => setAnnounceDays(e.target.value)}
+                className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+              >
+                <option value="dont">Don't send</option>
+                {[1,2,3,4,5,7,10,14].map((d) => (
+                  <option key={d} value={String(d)}>{d} day{d !== 1 ? "s" : ""} before opening</option>
+                ))}
+              </select>
+              {announceDays !== "dont" && orderStart && (
+                <span className="text-size-1 text-neutral-10">
+                  → {fmtBlastDate(new Date(new Date(orderStart).getTime() - parseInt(announceDays) * 86_400_000))}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-size-2 text-neutral-11 w-28 shrink-0">Reminder</span>
+              <select
+                value={reminderDays}
+                onChange={(e) => setReminderDays(e.target.value)}
+                className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+              >
+                <option value="dont">Don't send</option>
+                {[1,2,3].map((d) => {
+                  const reminderAt = orderEnd ? new Date(new Date(orderEnd).getTime() - d * 86_400_000) : null;
+                  const announceAt = announceDays !== "dont" && orderStart
+                    ? new Date(new Date(orderStart).getTime() - parseInt(announceDays) * 86_400_000)
+                    : null;
+                  const valid = !reminderAt || !announceAt || reminderAt > announceAt;
+                  return (
+                    <option key={d} value={String(d)} disabled={!valid}>
+                      {d} day{d !== 1 ? "s" : ""} before closing
+                    </option>
+                  );
+                })}
+              </select>
+              {reminderDays !== "dont" && orderEnd && (
+                <span className="text-size-1 text-neutral-10">
+                  → {fmtBlastDate(new Date(new Date(orderEnd).getTime() - parseInt(reminderDays) * 86_400_000))}
+                </span>
+              )}
+            </div>
+          </div>
+        </fieldset>
 
         <div className="flex justify-end gap-3">
           <Button asChild variant="outline" size="sm">
