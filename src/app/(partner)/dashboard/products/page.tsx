@@ -26,7 +26,7 @@ export default async function ProductsPage() {
 
   return (
     <div className="px-8 py-10 space-y-6">
-      <PageHeader title="Products" />
+      <PageHeader title="Products" size="large" />
       <ProductsClient items={items ?? []} userId={user.id} />
     </div>
   );

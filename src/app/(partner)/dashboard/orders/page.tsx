@@ -47,7 +47,7 @@ export default async function OrdersPage({
   return (
     <div className="px-8 py-10 space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader title="Orders" />
+        <PageHeader title="Orders" size="large" />
         <p className="text-size-2 text-neutral-10">{orders?.length ?? 0} orders</p>
       </div>
 

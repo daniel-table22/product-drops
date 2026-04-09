@@ -11,8 +11,6 @@ import {
   Store,
   Settings,
   ExternalLink,
-  Bell,
-  HelpCircle,
 } from "lucide-react";
 
 type NavItem = {
@@ -94,7 +92,7 @@ export function Sidenav({
   }
 
   return (
-    <aside className="w-56 shrink-0 min-h-screen bg-neutral-2 border-r border-neutral-6 flex flex-col px-3 py-6">
+    <aside className="w-56 shrink-0 min-h-screen bg-[#f8f8f4] border-r border-neutral-6 flex flex-col px-3 py-6">
 
       {/* Logo */}
       <div className="mb-6 px-2">
@@ -156,11 +154,6 @@ export function Sidenav({
         )}
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-neutral-6 pt-2 flex flex-col mt-4">
-        <NavButton href="/dashboard/settings#notifications" icon={Bell} label="Notifications" />
-        <NavButton href="mailto:help@productdrops.com" icon={HelpCircle} label="Help & support" external />
-      </div>
     </aside>
   );
 }

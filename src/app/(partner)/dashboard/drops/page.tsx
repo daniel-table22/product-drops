@@ -27,7 +27,7 @@ export default async function DropsPage() {
 
   return (
     <div className="px-8 py-10 space-y-6">
-      <PageHeader title="Drops" actions={<Button asChild size="sm"><a href="/dashboard/drops/new">New drop</a></Button>} />
+      <PageHeader title="Drops" size="large" actions={<Button asChild size="sm"><a href="/dashboard/drops/new">New drop</a></Button>} />
 
       {!drops || drops.length === 0 ? (
         <p className="text-size-2 text-neutral-10">No drops yet. Create your first drop to get started.</p>

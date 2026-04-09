@@ -47,7 +47,7 @@ export default async function EditDropPage({
         <Button asChild variant="ghost" size="sm">
           <a href={`/dashboard/drops/${id}`}>← Back</a>
         </Button>
-        <PageHeader title="Edit drop" />
+        <PageHeader title="Edit drop" size="large" />
       </div>
 
       <form action={updateDropWithId} className="space-y-6">

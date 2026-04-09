@@ -22,7 +22,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="px-8 py-10 max-w-2xl space-y-10">
-      <PageHeader title="Settings" />
+      <PageHeader title="Settings" size="large" />
 
       <section className="space-y-4">
         <h2 className="text-size-4 font-medium text-neutral-12">Account</h2>

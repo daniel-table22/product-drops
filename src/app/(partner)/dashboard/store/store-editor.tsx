@@ -61,7 +61,7 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
     <div className="flex gap-10 px-8 py-10 min-h-0">
       {/* Left: form */}
       <div className="w-[510px] shrink-0 space-y-8">
-        <PageHeader title="Store" />
+        <PageHeader title="Store" size="large" />
 
         <form action={updateStore} className="space-y-6">
           <div className="space-y-4">

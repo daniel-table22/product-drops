@@ -61,7 +61,7 @@ export default async function CustomersPage() {
   return (
     <div className="px-8 py-10 space-y-6">
       <div>
-        <PageHeader title="Customers" />
+        <PageHeader title="Customers" size="large" />
         <p className="mt-1 text-size-2 text-neutral-10">{customers.length} unique customers from orders</p>
       </div>
 

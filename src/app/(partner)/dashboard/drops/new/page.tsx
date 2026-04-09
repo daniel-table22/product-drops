@@ -27,7 +27,7 @@ export default async function NewDropPage() {
         <Button asChild variant="ghost" size="sm">
           <a href="/dashboard/drops">← Back</a>
         </Button>
-        <PageHeader title="New drop" />
+        <PageHeader title="New drop" size="large" />
       </div>
 
       <form action={createDrop} className="space-y-6">

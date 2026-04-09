@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   return (
     <div className="px-8 py-10 space-y-8">
       <div>
-        <PageHeader title="Dashboard" />
+        <PageHeader title="Dashboard" size="large" />
         <p className="mt-1 text-size-2 text-neutral-10">Overview</p>
       </div>
 
