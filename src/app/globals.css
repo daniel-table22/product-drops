@@ -111,6 +111,7 @@
   --color-overlay: var(--black-a8);
 
   /* --- Typography scale (Radix Type) --- */
+  /* --font-size-* kept as CSS vars for direct var() usage */
   --font-size-1: 0.75rem;    /* 12px */
   --font-size-2: 0.875rem;   /* 14px */
   --font-size-3: 1rem;       /* 16px */
@@ -120,6 +121,16 @@
   --font-size-7: 1.75rem;    /* 28px */
   --font-size-8: 2.1875rem;  /* 35px */
   --font-size-9: 3.75rem;    /* 60px */
+  /* --text-size-* generates text-size-N Tailwind utilities */
+  --text-size-1: 0.75rem;
+  --text-size-2: 0.875rem;
+  --text-size-3: 1rem;
+  --text-size-4: 1.125rem;
+  --text-size-5: 1.25rem;
+  --text-size-6: 1.5rem;
+  --text-size-7: 1.75rem;
+  --text-size-8: 2.1875rem;
+  --text-size-9: 3.75rem;
 
   --line-height-1: 1rem;     /* 16px */
   --line-height-2: 1.25rem;  /* 20px */
