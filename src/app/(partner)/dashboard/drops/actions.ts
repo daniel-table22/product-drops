@@ -131,6 +131,10 @@ export async function updateDrop(id: string, formData: FormData) {
   const order_window_ends_at = formData.get("order_window_ends_at") as string;
   const pickup_window_starts_at = formData.get("pickup_window_starts_at") as string;
   const pickup_window_ends_at = formData.get("pickup_window_ends_at") as string;
+  const announceDaysRaw = formData.get("announce_days_before") as string;
+  const reminderDaysRaw = formData.get("reminder_days_before") as string;
+  const announce_days_before = announceDaysRaw ? parseInt(announceDaysRaw) : null;
+  const reminder_days_before = reminderDaysRaw ? parseInt(reminderDaysRaw) : null;
 
   await supabase
     .from("drops")
@@ -141,6 +145,8 @@ export async function updateDrop(id: string, formData: FormData) {
       order_window_ends_at: new Date(order_window_ends_at).toISOString(),
       pickup_window_starts_at: new Date(pickup_window_starts_at).toISOString(),
       pickup_window_ends_at: new Date(pickup_window_ends_at).toISOString(),
+      announce_days_before,
+      reminder_days_before,
     })
     .eq("id", id);
 

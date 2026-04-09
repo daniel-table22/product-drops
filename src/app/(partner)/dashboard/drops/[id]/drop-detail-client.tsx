@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI, updateBlastSettings } from "./actions";
+import { updateOrderState, publishDrop, addDropItem, removeDropItem, sendBlast, rewriteWithAI } from "./actions";
 import { updateDrop } from "../actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Separator } from "@/components/ui/separator";
@@ -59,7 +59,6 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const [reminderValue, setReminderValue] = useState<string>(
     drop.reminder_days_before != null ? String(drop.reminder_days_before) : "dont"
   );
-  const [blastSettingsPending, setBlastSettingsPending] = useState(false);
   const [blastMessage, setBlastMessage] = useState("");
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);
@@ -169,6 +168,8 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
 
           {/* Drop details form */}
           <form action={updateDropWithId} className="space-y-5 max-w-xl">
+            <input type="hidden" name="announce_days_before" value={announceValue === "dont" ? "" : announceValue} />
+            <input type="hidden" name="reminder_days_before" value={reminderValue === "dont" ? "" : reminderValue} />
             <div className="space-y-1.5">
               <Label htmlFor="name">Drop name</Label>
               <Input id="name" name="name" defaultValue={drop.name} required />
@@ -203,81 +204,60 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 </div>
               </div>
             </fieldset>
+            <fieldset className="space-y-3">
+              <legend className="text-size-2 font-medium text-neutral-12">SMS blast schedule</legend>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-size-2 text-neutral-11 w-28 shrink-0">Announcement</span>
+                  <select
+                    value={announceValue}
+                    onChange={(e) => setAnnounceValue(e.target.value)}
+                    className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+                  >
+                    <option value="dont">Don't send</option>
+                    {[1,2,3,4,5,7,10,14].map((d) => (
+                      <option key={d} value={String(d)}>{d} day{d !== 1 ? "s" : ""} before opening</option>
+                    ))}
+                  </select>
+                  {announceValue !== "dont" && (
+                    <span className="text-size-1 text-neutral-10">
+                      → {fmtBlastDate(new Date(new Date(drop.order_window_starts_at).getTime() - parseInt(announceValue) * 86_400_000))}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-size-2 text-neutral-11 w-28 shrink-0">Reminder</span>
+                  <select
+                    value={reminderValue}
+                    onChange={(e) => setReminderValue(e.target.value)}
+                    className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+                  >
+                    <option value="dont">Don't send</option>
+                    {[1,2,3].map((d) => {
+                      const reminderAt = new Date(new Date(drop.order_window_ends_at).getTime() - d * 86_400_000);
+                      const announceAt = announceValue !== "dont"
+                        ? new Date(new Date(drop.order_window_starts_at).getTime() - parseInt(announceValue) * 86_400_000)
+                        : null;
+                      const valid = !announceAt || reminderAt > announceAt;
+                      return (
+                        <option key={d} value={String(d)} disabled={!valid}>
+                          {d} day{d !== 1 ? "s" : ""} before closing
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {reminderValue !== "dont" && (
+                    <span className="text-size-1 text-neutral-10">
+                      → {fmtBlastDate(new Date(new Date(drop.order_window_ends_at).getTime() - parseInt(reminderValue) * 86_400_000))}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </fieldset>
             <div className="flex justify-end">
               <Button type="submit" size="sm">Save changes</Button>
             </div>
           </form>
-
-          {/* Blast message schedule */}
-          <div className="space-y-4 max-w-xl pt-2">
-            <h2 className="text-size-3 font-medium text-neutral-12">SMS blast schedule</h2>
-            <div className="space-y-3">
-              {/* Announcement */}
-              <div className="flex items-center gap-3">
-                <span className="text-size-2 text-neutral-11 w-28 shrink-0">Announcement</span>
-                <select
-                  value={announceValue}
-                  onChange={(e) => setAnnounceValue(e.target.value)}
-                  className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
-                >
-                  <option value="dont">Don't send</option>
-                  {[1,2,3,4,5,7,10,14].map((d) => (
-                    <option key={d} value={String(d)}>{d} day{d !== 1 ? "s" : ""} before opening</option>
-                  ))}
-                </select>
-                {announceValue !== "dont" && (
-                  <span className="text-size-1 text-neutral-10">
-                    → {fmtBlastDate(new Date(new Date(drop.order_window_starts_at).getTime() - parseInt(announceValue) * 86_400_000))}
-                  </span>
-                )}
-              </div>
-              {/* Reminder */}
-              <div className="flex items-center gap-3">
-                <span className="text-size-2 text-neutral-11 w-28 shrink-0">Reminder</span>
-                <select
-                  value={reminderValue}
-                  onChange={(e) => setReminderValue(e.target.value)}
-                  className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
-                >
-                  <option value="dont">Don't send</option>
-                  {[1,2,3].map((d) => {
-                    const reminderAt = new Date(new Date(drop.order_window_ends_at).getTime() - d * 86_400_000);
-                    const announceAt = announceValue !== "dont"
-                      ? new Date(new Date(drop.order_window_starts_at).getTime() - parseInt(announceValue) * 86_400_000)
-                      : null;
-                    const valid = !announceAt || reminderAt > announceAt;
-                    return (
-                      <option key={d} value={String(d)} disabled={!valid}>
-                        {d} day{d !== 1 ? "s" : ""} before closing
-                      </option>
-                    );
-                  })}
-                </select>
-                {reminderValue !== "dont" && (
-                  <span className="text-size-1 text-neutral-10">
-                    → {fmtBlastDate(new Date(new Date(drop.order_window_ends_at).getTime() - parseInt(reminderValue) * 86_400_000))}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                disabled={blastSettingsPending}
-                onClick={async () => {
-                  setBlastSettingsPending(true);
-                  await updateBlastSettings(
-                    drop.id,
-                    announceValue !== "dont" ? parseInt(announceValue) : null,
-                    reminderValue !== "dont" ? parseInt(reminderValue) : null,
-                  );
-                  setBlastSettingsPending(false);
-                }}
-              >
-                {blastSettingsPending ? "Saving…" : "Save blast schedule"}
-              </Button>
-            </div>
-          </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between max-w-xl">
