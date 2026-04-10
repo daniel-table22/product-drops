@@ -11,7 +11,9 @@ import {
   Settings,
   ExternalLink,
   Megaphone,
+  LogOut,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type NavItem = {
   label: string;
@@ -172,6 +174,19 @@ export function Sidenav({
           </div>
         )}
       </nav>
+
+      {/* Logout */}
+      <button
+        onClick={async () => {
+          const supabase = createClient();
+          await supabase.auth.signOut();
+          window.location.href = "/login";
+        }}
+        className="flex items-center gap-2 px-2 py-2 rounded-md w-full text-sm text-neutral-11 hover:bg-neutral-3 hover:text-neutral-12 transition-colors mt-4"
+      >
+        <LogOut size={16} className="shrink-0 opacity-70" />
+        <span>Log out</span>
+      </button>
 
     </aside>
   );
