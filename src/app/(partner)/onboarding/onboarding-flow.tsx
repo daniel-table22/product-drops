@@ -402,8 +402,9 @@ function Step2({
           Reading everything we can find about your brand.
         </p>
 
-        {/* Current search query */}
-        <div className="h-5 mb-4">
+        {/* Spinner + query — always at top */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-3 h-3 rounded-full border-2 border-neutral-4 border-t-neutral-9 animate-spin shrink-0" />
           {currentQuery ? (
             <p
               className="text-xs text-neutral-8 italic truncate"
@@ -411,9 +412,11 @@ function Step2({
             >
               Searching: &ldquo;{currentQuery}&rdquo;
             </p>
-          ) : cards.length === 0 ? (
-            <p className="text-xs text-neutral-8">Starting up…</p>
-          ) : null}
+          ) : (
+            <p className="text-xs text-neutral-8">
+              {cards.length === 0 ? "Starting up…" : "This takes about a minute…"}
+            </p>
+          )}
         </div>
 
         {/* Card grid — up to 6 columns */}
@@ -424,12 +427,6 @@ function Step2({
             ))}
           </div>
         )}
-
-        {/* Spinner */}
-        <div className="flex items-center gap-2 text-xs text-neutral-8">
-          <div className="w-3 h-3 rounded-full border-2 border-neutral-4 border-t-neutral-9 animate-spin shrink-0" />
-          This takes about a minute…
-        </div>
 
         <style>{`
           @keyframes cardIn {
