@@ -74,7 +74,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
   // Apply brand bg to <body> so the page chrome matches the storefront theme
   useEffect(() => {
-    document.body.style.backgroundColor = partner.bg_color;
+    document.body.style.backgroundColor = "#000";
     return () => { document.body.style.backgroundColor = ""; };
   }, [partner.bg_color]);
 
@@ -111,19 +111,20 @@ export function DropStorefront({ drop, partner, items }: Props) {
   });
 
   return (
-    <div
-      data-theme-root
-      className="min-h-screen"
-      style={{
-        backgroundColor: partner.bg_color,
-        color: partner.fg_color,
-        fontFamily,
-        ["--color-bg" as string]: partner.bg_color,
-        ["--color-fg" as string]: partner.fg_color,
-        ["--color-accent" as string]: partner.accent_color,
-        paddingBottom: cartCount > 0 ? "128px" : "48px",
-      }}
-    >
+    <div className="min-h-screen bg-black">
+      <div
+        data-theme-root
+        className="max-w-[400px] mx-auto min-h-screen"
+        style={{
+          backgroundColor: partner.bg_color,
+          color: partner.fg_color,
+          fontFamily,
+          ["--color-bg" as string]: partner.bg_color,
+          ["--color-fg" as string]: partner.fg_color,
+          ["--color-accent" as string]: partner.accent_color,
+          paddingBottom: cartCount > 0 ? "128px" : "48px",
+        }}
+      >
       <ThemeListener />
 
       {/* Sticky header */}
@@ -263,6 +264,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
         cartLines={cartLines}
         subtotalCents={subtotalCents}
       />
+      </div>
     </div>
   );
 }

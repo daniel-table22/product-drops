@@ -15,6 +15,12 @@ export default async function Home() {
       >
         Log in →
       </a>
+      <a
+        href="/onboarding"
+        className="rounded-full bg-neutral-12 px-6 py-2 text-sm font-medium text-white hover:opacity-80 transition-opacity"
+      >
+        Get started →
+      </a>
     </main>
   );
 }

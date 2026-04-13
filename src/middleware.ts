@@ -34,8 +34,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect partner routes — redirect to login if unauthenticated
-  const isPartnerRoute =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+  const isPartnerRoute = pathname.startsWith("/dashboard");
 
   if (isPartnerRoute && !user) {
     const loginUrl = request.nextUrl.clone();

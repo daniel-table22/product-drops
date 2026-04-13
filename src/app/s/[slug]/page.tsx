@@ -73,20 +73,21 @@ export default async function StorefrontPage({
   const font    = fontFamilies[partner.font_style ?? "sans"];
 
   return (
-    <div
-      data-theme-root
-      className="min-h-screen"
-      style={{
-        backgroundColor: bg,
-        color: fg,
-        fontFamily: font,
-        ["--color-bg" as string]: bg,
-        ["--color-fg" as string]: fg,
-        ["--color-accent" as string]: accent,
-      }}
-    >
+    <div className="min-h-screen bg-black">
+      <div
+        data-theme-root
+        className="max-w-[400px] mx-auto min-h-screen"
+        style={{
+          backgroundColor: bg,
+          color: fg,
+          fontFamily: font,
+          ["--color-bg" as string]: bg,
+          ["--color-fg" as string]: fg,
+          ["--color-accent" as string]: accent,
+        }}
+      >
       <ThemeListener />
-      <div className="max-w-sm mx-auto px-2 pt-[30px] pb-12 flex flex-col gap-6">
+      <div className="px-2 pt-[30px] pb-12 flex flex-col gap-6">
 
         {/* partner-photo */}
         {partner.hero_url ? (
@@ -215,6 +216,7 @@ export default async function StorefrontPage({
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

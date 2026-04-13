@@ -67,6 +67,7 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
   const [pickupEnd, setPickupEnd] = useState("");
   const [announceDays, setAnnounceDays] = useState("5");
   const [reminderDays, setReminderDays] = useState("dont");
+  const [autofilling, setAutofilling] = useState(false);
 
   const [itemPrices, setItemPrices] = useState<Record<string, string>>(() =>
     Object.fromEntries(libraryItems.map((i) => [i.id, (i.default_price_cents / 100).toFixed(2)]))
@@ -85,6 +86,7 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
   );
 
   function handleAutofill() {
+    setAutofilling(true);
     setName(`${pick(ADJECTIVES)} ${pick(NOUNS)}`);
     setDescription(pick(DESCRIPTIONS));
 
@@ -102,6 +104,7 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
       shuffled.forEach((i) => { next[i.id] = String(Math.floor(Math.random() * 21) + 10); });
       return next;
     });
+    setTimeout(() => setAutofilling(false), 600);
   }
 
   return (
@@ -113,8 +116,8 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
           </Button>
           <PageHeader title="New drop" size="large" />
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={handleAutofill}>
-          ✦ Autofill
+        <Button type="button" variant="outline" size="sm" onClick={handleAutofill} disabled={autofilling}>
+          {autofilling ? "Filling…" : "✦ Autofill"}
         </Button>
       </div>
 
@@ -171,6 +174,60 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
               <Label htmlFor="pickup_window_ends_at">Closes</Label>
               <Input id="pickup_window_ends_at" name="pickup_window_ends_at" type="datetime-local" required
                 value={pickupEnd} onChange={(e) => setPickupEnd(e.target.value)} />
+            </div>
+          </div>
+        </fieldset>
+
+        <input type="hidden" name="announce_days_before" value={announceDays === "dont" ? "" : announceDays} />
+        <input type="hidden" name="reminder_days_before" value={reminderDays === "dont" ? "" : reminderDays} />
+
+        <fieldset className="space-y-3">
+          <legend className="text-size-2 font-medium text-neutral-12">SMS blast schedule</legend>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-size-2 text-neutral-11 w-28 shrink-0">Announcement</span>
+              <select
+                value={announceDays}
+                onChange={(e) => setAnnounceDays(e.target.value)}
+                className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+              >
+                <option value="dont">Don't send</option>
+                {[1,2,3,4,5,7,10,14].map((d) => (
+                  <option key={d} value={String(d)}>{d} day{d !== 1 ? "s" : ""} before opening</option>
+                ))}
+              </select>
+              {announceDays !== "dont" && orderStart && (
+                <span className="text-size-1 text-neutral-10">
+                  → {fmtBlastDate(new Date(new Date(orderStart).getTime() - parseInt(announceDays) * 86_400_000))}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-size-2 text-neutral-11 w-28 shrink-0">Reminder</span>
+              <select
+                value={reminderDays}
+                onChange={(e) => setReminderDays(e.target.value)}
+                className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+              >
+                <option value="dont">Don't send</option>
+                {[1,2,3].map((d) => {
+                  const reminderAt = orderEnd ? new Date(new Date(orderEnd).getTime() - d * 86_400_000) : null;
+                  const announceAt = announceDays !== "dont" && orderStart
+                    ? new Date(new Date(orderStart).getTime() - parseInt(announceDays) * 86_400_000)
+                    : null;
+                  const valid = !reminderAt || !announceAt || reminderAt > announceAt;
+                  return (
+                    <option key={d} value={String(d)} disabled={!valid}>
+                      {d} day{d !== 1 ? "s" : ""} before closing
+                    </option>
+                  );
+                })}
+              </select>
+              {reminderDays !== "dont" && orderEnd && (
+                <span className="text-size-1 text-neutral-10">
+                  → {fmtBlastDate(new Date(new Date(orderEnd).getTime() - parseInt(reminderDays) * 86_400_000))}
+                </span>
+              )}
             </div>
           </div>
         </fieldset>
@@ -232,65 +289,17 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
           </div>
         )}
 
-        <input type="hidden" name="announce_days_before" value={announceDays === "dont" ? "" : announceDays} />
-        <input type="hidden" name="reminder_days_before" value={reminderDays === "dont" ? "" : reminderDays} />
-
-        <fieldset className="space-y-3">
-          <legend className="text-size-2 font-medium text-neutral-12">SMS blast schedule</legend>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-size-2 text-neutral-11 w-28 shrink-0">Announcement</span>
-              <select
-                value={announceDays}
-                onChange={(e) => setAnnounceDays(e.target.value)}
-                className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
-              >
-                <option value="dont">Don't send</option>
-                {[1,2,3,4,5,7,10,14].map((d) => (
-                  <option key={d} value={String(d)}>{d} day{d !== 1 ? "s" : ""} before opening</option>
-                ))}
-              </select>
-              {announceDays !== "dont" && orderStart && (
-                <span className="text-size-1 text-neutral-10">
-                  → {fmtBlastDate(new Date(new Date(orderStart).getTime() - parseInt(announceDays) * 86_400_000))}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-size-2 text-neutral-11 w-28 shrink-0">Reminder</span>
-              <select
-                value={reminderDays}
-                onChange={(e) => setReminderDays(e.target.value)}
-                className="h-9 rounded-md border border-neutral-6 bg-surface px-3 text-size-2 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
-              >
-                <option value="dont">Don't send</option>
-                {[1,2,3].map((d) => {
-                  const reminderAt = orderEnd ? new Date(new Date(orderEnd).getTime() - d * 86_400_000) : null;
-                  const announceAt = announceDays !== "dont" && orderStart
-                    ? new Date(new Date(orderStart).getTime() - parseInt(announceDays) * 86_400_000)
-                    : null;
-                  const valid = !reminderAt || !announceAt || reminderAt > announceAt;
-                  return (
-                    <option key={d} value={String(d)} disabled={!valid}>
-                      {d} day{d !== 1 ? "s" : ""} before closing
-                    </option>
-                  );
-                })}
-              </select>
-              {reminderDays !== "dont" && orderEnd && (
-                <span className="text-size-1 text-neutral-10">
-                  → {fmtBlastDate(new Date(new Date(orderEnd).getTime() - parseInt(reminderDays) * 86_400_000))}
-                </span>
-              )}
-            </div>
-          </div>
-        </fieldset>
-
-        <div className="flex justify-end gap-3">
-          <Button asChild variant="outline" size="sm">
+        <div className="flex justify-end gap-3 pt-2">
+          <Button asChild size="lg" className="rounded-none bg-neutral-3 text-black hover:bg-neutral-4 active:bg-neutral-5">
             <a href="/dashboard/drops">Cancel</a>
           </Button>
-          <SubmitButton pendingText="Saving…">Save draft</SubmitButton>
+          <SubmitButton
+            size="lg"
+            pendingText="Saving…"
+            className="rounded-none bg-accent-5 text-black hover:bg-accent-6 active:bg-accent-7"
+          >
+            Save draft
+          </SubmitButton>
         </div>
       </form>
     </div>

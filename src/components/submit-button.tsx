@@ -8,12 +8,13 @@ interface Props {
   pendingText?: string;
   size?: "sm" | "md" | "lg";
   variant?: "solid" | "outline" | "ghost" | "destructive";
+  className?: string;
 }
 
-export function SubmitButton({ children, pendingText = "Saving…", size = "sm", variant }: Props) {
+export function SubmitButton({ children, pendingText = "Saving…", size = "sm", variant, className }: Props) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size={size} variant={variant} disabled={pending}>
+    <Button type="submit" size={size} variant={variant} disabled={pending} className={className}>
       {pending ? pendingText : children}
     </Button>
   );

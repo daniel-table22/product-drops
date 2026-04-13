@@ -119,6 +119,81 @@ export async function deleteDrop(id: string) {
   redirect("/dashboard/drops");
 }
 
+// ─── Preset drops (dev / demo shortcuts) ─────────────────────────────────────
+
+const PRESET_ADJECTIVES = ["Special", "Magical", "Exclusive", "Glorious", "Secret", "Legendary", "Limited", "Golden"];
+const PRESET_NOUNS = ["Bake", "Treats", "Batch", "Collection", "Drop", "Bundle", "Haul", "Basket"];
+const PRESET_DESCRIPTIONS = [
+  "Handcrafted in small batches — fresh, local, and gone by noon.",
+  "Our most requested recipes, made with love and available for one day only.",
+  "Limited quantities of the good stuff. Order early or miss out.",
+  "Seasonal ingredients, familiar favorites, baked fresh this morning.",
+];
+
+function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function addH(d: Date, h: number): Date { return new Date(d.getTime() + h * 3_600_000); }
+
+export type DropPreset = "preload" | "orders_closed" | "pickup_open" | "pickup_closed";
+
+export async function createPresetDrop(preset: DropPreset) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: partner } = await supabase
+    .from("partners").select("id").eq("user_id", user.id).single();
+  if (!partner) redirect("/onboarding");
+
+  const { data: items } = await supabase
+    .from("items").select("id, default_price_cents")
+    .eq("partner_id", partner.id).is("archived_at", null);
+
+  const now = new Date();
+  const windows = {
+    preload:       { order_window_starts_at: addH(now, -1),  order_window_ends_at: addH(now, 23),  pickup_window_starts_at: addH(now, 72),  pickup_window_ends_at: addH(now, 80), state: "orders_open"   as const },
+    orders_closed: { order_window_starts_at: addH(now, -24), order_window_ends_at: addH(now, -2),  pickup_window_starts_at: addH(now, 4),   pickup_window_ends_at: addH(now, 12), state: "orders_closed" as const },
+    pickup_open:   { order_window_starts_at: addH(now, -48), order_window_ends_at: addH(now, -6),  pickup_window_starts_at: addH(now, -1),  pickup_window_ends_at: addH(now, 6),  state: "pickup_open"   as const },
+    pickup_closed: { order_window_starts_at: addH(now, -72), order_window_ends_at: addH(now, -24), pickup_window_starts_at: addH(now, -12), pickup_window_ends_at: addH(now, -1), state: "pickup_closed" as const },
+  }[preset];
+
+  const name = `${pickRandom(PRESET_ADJECTIVES)} ${pickRandom(PRESET_NOUNS)}`;
+  const slug = `${slugify(name)}-${Date.now()}`;
+
+  const { data: drop, error } = await supabase
+    .from("drops")
+    .insert({
+      partner_id: partner.id,
+      name,
+      description: pickRandom(PRESET_DESCRIPTIONS),
+      slug,
+      order_window_starts_at:  windows.order_window_starts_at.toISOString(),
+      order_window_ends_at:    windows.order_window_ends_at.toISOString(),
+      pickup_window_starts_at: windows.pickup_window_starts_at.toISOString(),
+      pickup_window_ends_at:   windows.pickup_window_ends_at.toISOString(),
+      state: windows.state,
+      published_at: now.toISOString(),
+    })
+    .select("id").single();
+
+  if (error || !drop) return;
+
+  if (items && items.length > 0) {
+    const picks = [...items].sort(() => Math.random() - 0.5).slice(0, Math.min(3, items.length));
+    for (const item of picks) {
+      const qty = Math.floor(Math.random() * 21) + 10;
+      await supabase.from("drop_items").insert({
+        drop_id: drop.id, item_id: item.id,
+        price_cents: item.default_price_cents, total_qty: qty, available_qty: qty,
+      });
+    }
+  }
+
+  revalidatePath("/dashboard/drops");
+  redirect(`/dashboard/drops/${drop.id}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function updateDrop(id: string, formData: FormData) {
   const supabase = await createClient();
 

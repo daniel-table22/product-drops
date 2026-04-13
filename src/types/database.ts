@@ -274,10 +274,14 @@ export type Database = {
           intro_heading: string | null
           logo_url: string | null
           onboarding_state: Database["public"]["Enums"]["partner_onboarding_state"]
+          phone: string | null
           pickup_address: string
           slug: string
           stripe_account_id: string | null
+          tone: Json | null
+          tone_researched_at: string | null
           user_id: string
+          website_url: string | null
         }
         Insert: {
           accent_color?: string
@@ -293,10 +297,14 @@ export type Database = {
           intro_heading?: string | null
           logo_url?: string | null
           onboarding_state?: Database["public"]["Enums"]["partner_onboarding_state"]
+          phone?: string | null
           pickup_address: string
           slug: string
           stripe_account_id?: string | null
+          tone?: Json | null
+          tone_researched_at?: string | null
           user_id: string
+          website_url?: string | null
         }
         Update: {
           accent_color?: string
@@ -312,10 +320,14 @@ export type Database = {
           intro_heading?: string | null
           logo_url?: string | null
           onboarding_state?: Database["public"]["Enums"]["partner_onboarding_state"]
+          phone?: string | null
           pickup_address?: string
           slug?: string
           stripe_account_id?: string | null
+          tone?: Json | null
+          tone_researched_at?: string | null
           user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -363,6 +375,9 @@ export type Database = {
           partner_id: string
           phone: string
           opted_in: boolean
+          source: string
+          name: string | null
+          email: string | null
           created_at: string
         }
         Insert: {
@@ -370,6 +385,9 @@ export type Database = {
           partner_id: string
           phone: string
           opted_in?: boolean
+          source?: string
+          name?: string | null
+          email?: string | null
           created_at?: string
         }
         Update: {
@@ -377,6 +395,9 @@ export type Database = {
           partner_id?: string
           phone?: string
           opted_in?: boolean
+          source?: string
+          name?: string | null
+          email?: string | null
           created_at?: string
         }
         Relationships: [

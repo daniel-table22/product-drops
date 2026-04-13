@@ -56,7 +56,7 @@ export function SubscribeForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       <div className="flex gap-3 items-stretch">
-        <div className="flex-1 flex items-center gap-2 bg-white border-2 rounded-xl px-3 py-3 shadow-sm" style={{ borderColor: "var(--color-accent)" }}>
+        <div className="flex-1 flex items-center gap-2 bg-white border-2 rounded px-3 py-3 shadow-sm" style={{ borderColor: "var(--color-accent)" }}>
           <span className="font-mono text-sm text-black/40 shrink-0">+1</span>
           <input
             type="tel"
@@ -70,7 +70,7 @@ export function SubscribeForm({
         <button
           type="submit"
           disabled={isPending}
-          className="text-white text-sm font-medium rounded-xl px-4 py-3 shrink-0 transition-colors disabled:opacity-60 shadow-sm"
+          className="text-white text-sm font-medium rounded px-4 py-3 shrink-0 transition-colors disabled:opacity-60 shadow-sm"
           style={{ backgroundColor: "var(--color-accent)" }}
         >
           {isPending ? "…" : "Notify me!"}
