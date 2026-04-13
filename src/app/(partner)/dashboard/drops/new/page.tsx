@@ -22,5 +22,5 @@ export default async function NewDropPage() {
     .is("archived_at", null)
     .order("name");
 
-  return <NewDropForm libraryItems={libraryItems ?? []} />;
+  return <NewDropForm libraryItems={libraryItems ?? []} userId={user.id} />;
 }

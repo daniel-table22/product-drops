@@ -24,15 +24,16 @@ export async function createItem(formData: FormData) {
   const price = parseFloat(formData.get("default_price_cents") as string) || 0;
   const default_price_cents = Math.round(price * 100);
 
-  await supabase.from("items").insert({
+  const { data: item } = await supabase.from("items").insert({
     partner_id: partner.id,
     name,
     description,
     photo_url,
     default_price_cents,
-  });
+  }).select("id, name, description, photo_url, default_price_cents").single();
 
   revalidatePath("/dashboard/products");
+  return item;
 }
 
 export async function updateItem(id: string, formData: FormData) {

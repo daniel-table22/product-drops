@@ -1,12 +1,22 @@
 "use client";
 
-import { useActionState, useState, useRef } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
+import { ImageUpload } from "@/components/image-upload";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { createDrop } from "../actions";
+import { createItem } from "../../products/actions";
 
 type LibraryItem = {
   id: string;
@@ -56,7 +66,7 @@ function addHours(d: Date, h: number): Date {
   return new Date(d.getTime() + h * 60 * 60 * 1000);
 }
 
-export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
+export function NewDropForm({ libraryItems, userId }: { libraryItems: LibraryItem[]; userId: string }) {
   const [state, formAction, pending] = useActionState(createDrop, null);
 
   const [name, setName] = useState("");
@@ -69,6 +79,7 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
   const [reminderDays, setReminderDays] = useState("dont");
   const [autofilling, setAutofilling] = useState(false);
 
+  const [allItems, setAllItems] = useState<LibraryItem[]>(libraryItems);
   const [itemPrices, setItemPrices] = useState<Record<string, string>>(() =>
     Object.fromEntries(libraryItems.map((i) => [i.id, (i.default_price_cents / 100).toFixed(2)]))
   );
@@ -76,7 +87,22 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
     Object.fromEntries(libraryItems.map((i) => [i.id, "0"]))
   );
 
-  const selectedItems = libraryItems.filter((i) => parseInt(itemQtys[i.id] ?? "0", 10) > 0);
+  const [newItemOpen, setNewItemOpen] = useState(false);
+  const [newItemPending, setNewItemPending] = useState(false);
+
+  async function handleCreateItem(formData: FormData) {
+    setNewItemPending(true);
+    const item = await createItem(formData);
+    if (item) {
+      setAllItems((prev) => [...prev, item]);
+      setItemPrices((prev) => ({ ...prev, [item.id]: (item.default_price_cents / 100).toFixed(2) }));
+      setItemQtys((prev) => ({ ...prev, [item.id]: "1" }));
+    }
+    setNewItemOpen(false);
+    setNewItemPending(false);
+  }
+
+  const selectedItems = allItems.filter((i) => parseInt(itemQtys[i.id] ?? "0", 10) > 0);
   const itemsJson = JSON.stringify(
     selectedItems.map((i) => ({
       id: i.id,
@@ -97,10 +123,10 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
     setPickupEnd(toDateTimeLocal(addHours(now, 80)));
 
     // Pick 3 random items with qty 10-30
-    const shuffled = [...libraryItems].sort(() => Math.random() - 0.5).slice(0, 3);
+    const shuffled = [...allItems].sort(() => Math.random() - 0.5).slice(0, 3);
     setItemQtys((prev) => {
       const next = { ...prev };
-      libraryItems.forEach((i) => { next[i.id] = "0"; });
+      allItems.forEach((i) => { next[i.id] = "0"; });
       shuffled.forEach((i) => { next[i.id] = String(Math.floor(Math.random() * 21) + 10); });
       return next;
     });
@@ -233,9 +259,14 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
         </fieldset>
 
         {/* Inline items */}
-        {libraryItems.length > 0 && (
-          <div className="space-y-2">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
             <Label>Items</Label>
+            <Button type="button" size="sm" variant="outline" onClick={() => setNewItemOpen(true)}>
+              + New product
+            </Button>
+          </div>
+          {allItems.length > 0 && (
             <div className="border border-neutral-6 rounded-3 overflow-hidden">
               <table className="w-full text-size-2">
                 <thead className="bg-neutral-2 border-b border-neutral-6">
@@ -246,7 +277,7 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-6">
-                  {libraryItems.map((item) => {
+                  {allItems.map((item) => {
                     const qty = parseInt(itemQtys[item.id] ?? "0", 10);
                     return (
                       <tr key={item.id} className={qty > 0 ? "bg-accent-2" : "bg-surface"}>
@@ -281,13 +312,13 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
                 </tbody>
               </table>
             </div>
-            {selectedItems.length > 0 && (
-              <p className="text-size-1 text-neutral-10">
-                {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""} selected
-              </p>
-            )}
-          </div>
-        )}
+          )}
+          {selectedItems.length > 0 && (
+            <p className="text-size-1 text-neutral-10">
+              {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""} selected
+            </p>
+          )}
+        </div>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button asChild size="lg" className="rounded-none bg-neutral-3 text-black hover:bg-neutral-4 active:bg-neutral-5">
@@ -302,6 +333,51 @@ export function NewDropForm({ libraryItems }: { libraryItems: LibraryItem[] }) {
           </SubmitButton>
         </div>
       </form>
+
+      <Dialog open={newItemOpen} onOpenChange={setNewItemOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New product</DialogTitle>
+          </DialogHeader>
+          <form action={handleCreateItem} className="mt-4 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-item-name">Name</Label>
+              <Input id="new-item-name" name="name" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-item-description">Description</Label>
+              <Input id="new-item-description" name="description" />
+            </div>
+            <ImageUpload
+              name="photo_url"
+              label="Photo"
+              defaultUrl={null}
+              userId={userId}
+              storagePath="item"
+              previewShape="square"
+            />
+            <div className="space-y-1.5">
+              <Label htmlFor="new-item-price">Price ($)</Label>
+              <Input
+                id="new-item-price"
+                name="default_price_cents"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" size="sm">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" size="sm" disabled={newItemPending}>
+                {newItemPending ? "Creating…" : "Create product"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
