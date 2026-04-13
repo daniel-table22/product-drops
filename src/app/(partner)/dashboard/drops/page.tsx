@@ -2,10 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { DropStateBadge } from "@/components/state-badge";
 import { DeleteDropButton } from "./delete-drop-button";
+import { NewDropButton } from "./new-drop-button";
+import { DropRow, DropActionsCell } from "./drop-row";
 
 export default async function DropsPage() {
   const supabase = await createClient();
@@ -50,7 +51,7 @@ export default async function DropsPage() {
 
   return (
     <div className="px-8 py-10 space-y-6">
-      <PageHeader title="Drops" size="large" actions={<Button asChild size="sm"><a href="/dashboard/drops/new">New drop</a></Button>} />
+      <PageHeader title="Drops" size="large" actions={<NewDropButton />} />
 
       {!drops || drops.length === 0 ? (
         <p className="text-size-2 text-neutral-10">No drops yet. Create your first drop to get started.</p>
@@ -60,7 +61,7 @@ export default async function DropsPage() {
             <thead className="bg-neutral-2 border-b border-neutral-6">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-11">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-11 w-36">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Order window</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Pickup window</th>
                 <th className="px-4 py-3 text-right font-medium text-neutral-11">Orders / audience</th>
@@ -69,16 +70,11 @@ export default async function DropsPage() {
             </thead>
             <tbody className="divide-y divide-neutral-6">
               {drops.map((drop) => (
-                <tr key={drop.id} className="bg-surface hover:bg-neutral-2 transition-colors">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/dashboard/drops/${drop.id}`}
-                      className="font-medium text-neutral-12 hover:underline"
-                    >
-                      {drop.name}
-                    </a>
+                <DropRow key={drop.id} href={`/dashboard/drops/${drop.id}`} className="bg-surface hover:bg-neutral-2 transition-colors">
+                  <td className="px-4 py-3 font-medium text-neutral-12">
+                    {drop.name}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 w-36">
                     <DropStateBadge state={drop.state} />
                   </td>
                   <td className="px-4 py-3 text-neutral-10">
@@ -92,24 +88,20 @@ export default async function DropsPage() {
                   <td className="px-4 py-3 text-right text-neutral-12 font-mono text-size-2">
                     {orderCountByDrop[drop.id] ?? 0} / {subscriberCount ?? 0}
                   </td>
-                  <td className="px-4 py-3">
+                  <DropActionsCell>
                     <div className="flex items-center justify-end gap-2">
-                      <Button asChild size="sm" variant="ghost">
-                        <a href={`/dashboard/drops/${drop.id}`}>View</a>
-                      </Button>
-                      <Button asChild size="sm" variant="ghost">
-                        <a
-                          href={`/s/${partner.slug}/d/${drop.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Visit ↗
-                        </a>
-                      </Button>
+                      <a
+                        href={`/s/${partner.slug}/d/${drop.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center h-7 px-3 rounded-3 text-size-1 font-medium text-neutral-11 hover:bg-neutral-3 hover:text-neutral-12 transition-colors"
+                      >
+                        Visit ↗
+                      </a>
                       <DeleteDropButton id={drop.id} name={drop.name} state={drop.state} />
                     </div>
-                  </td>
-                </tr>
+                  </DropActionsCell>
+                </DropRow>
               ))}
             </tbody>
           </table>
