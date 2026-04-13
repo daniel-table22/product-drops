@@ -136,7 +136,17 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
   if (!ordersOpen || cartCount === 0) return null;
 
   return (
-    <div className="fixed md:sticky bottom-0 left-0 right-0 z-30 bg-black">
+    <>
+    <style>{`
+      @keyframes footerSlideIn {
+        from { transform: translateY(140px); opacity: 0; }
+        to   { transform: translateY(0);     opacity: 1; }
+      }
+    `}</style>
+    <div
+      className="fixed md:sticky bottom-0 left-0 right-0 z-30 bg-black"
+      style={{ animation: "footerSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+    >
       <div
         className="max-w-[400px] mx-auto flex flex-col gap-[10px] px-6 py-4 pb-safe"
         style={{ backgroundColor: "var(--color-bg, #faf9f6)", boxShadow: "0px 0px 21px 0px rgba(0,0,51,0.16)" }}
@@ -198,5 +208,6 @@ export function CheckoutFooter({ drop, partner, cartLines, subtotalCents }: Prop
       </div>
       </div>
     </div>
+    </>
   );
 }
