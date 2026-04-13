@@ -678,7 +678,7 @@ function SmsPhoneContent({ sms, businessName }: { sms: string; businessName: str
       <div style={{ padding: "16px" }}>
         <p style={{ margin: "0 0 12px", fontSize: 11, color: "#888", textAlign: "center", letterSpacing: "0.05em", textTransform: "uppercase" }}>{businessName}</p>
         <div style={{ backgroundColor: "#e5e5ea", borderRadius: "18px 18px 18px 4px", padding: "10px 14px", maxWidth: "85%" }}>
-          <p style={{ margin: 0, fontSize: 15, color: "#000", lineHeight: 1.45 }}>{sms}</p>
+          <p style={{ margin: 0, fontSize: 18, color: "#000", lineHeight: 1.45 }}>{sms}</p>
         </div>
       </div>
     </div>
@@ -691,8 +691,8 @@ function EmailPhoneContent({ email }: { email: PreviewData["email"] }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={PREVIEW_PHOTOS[2]} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
       <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <p style={{ margin: 0, fontSize: 17, fontWeight: 600, color: "#000", lineHeight: 1.3 }}>{email.subject}</p>
-        <p style={{ margin: 0, fontSize: 14, color: "#555", lineHeight: 1.55 }}>{email.body}</p>
+        <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "#000", lineHeight: 1.3 }}>{email.subject}</p>
+        <p style={{ margin: 0, fontSize: 18, color: "#555", lineHeight: 1.55 }}>{email.body}</p>
       </div>
     </div>
   );
@@ -704,7 +704,7 @@ function InstagramPhoneContent({ instagram }: { instagram: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={PREVIEW_PHOTOS[3]} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
       <div style={{ padding: "12px 16px" }}>
-        <p style={{ margin: 0, fontSize: 14, color: "#000", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{instagram}</p>
+        <p style={{ margin: 0, fontSize: 18, color: "#000", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{instagram}</p>
       </div>
     </div>
   );
@@ -767,8 +767,8 @@ function Step3({
         </span>
       </div>
 
-      <div className="border-l-2 border-[#c8a89a] bg-[#fdf5f2] rounded-r-lg px-4 py-3 mb-8">
-        <p className="text-sm text-neutral-12 leading-relaxed">{tone.tone.summary}</p>
+      <div className="mb-8 max-w-[800px]">
+        <p className="text-base text-neutral-12 leading-relaxed">{tone.tone.summary}</p>
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-6 mb-10 justify-items-center">
