@@ -30,6 +30,18 @@ function toDateTimeLocal(iso: string): string {
   return new Date(iso).toISOString().slice(0, 16);
 }
 
+function defaultBlastMessage(drop: Drop, dropItems: DropItem[], partnerSlug: string): string {
+  const dropUrl = `productdrops.com/s/${partnerSlug}/d/${drop.slug}`;
+  const closeDate = new Date(drop.order_window_ends_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const itemNames = dropItems.slice(0, 2).map((di) => di.item.name);
+  let msg = `${drop.name} is live!`;
+  if (itemNames.length > 0) {
+    msg += ` ${itemNames.join(", ")}${dropItems.length > 2 ? " + more" : ""}.`;
+  }
+  msg += ` Order by ${closeDate} → ${dropUrl}`;
+  return msg;
+}
+
 function fmtBlastDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
     " at " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
@@ -67,7 +79,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const [seedPartialPending, setSeedPartialPending] = useState(false);
   const [seedFullPending, setSeedFullPending] = useState(false);
   const [seedResult, setSeedResult] = useState<{ created: number } | null>(null);
-  const [blastMessage, setBlastMessage] = useState("");
+  const [blastMessage, setBlastMessage] = useState(() => defaultBlastMessage(drop, dropItems, partnerSlug));
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);
   const [blastAIPending, setBlastAIPending] = useState(false);
