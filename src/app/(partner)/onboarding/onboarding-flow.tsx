@@ -210,6 +210,22 @@ function getDomain(url: string) {
   catch { return url; }
 }
 
+const PRESS_DOMAINS = [
+  "eater.com", "timeout.com", "yelp.com", "tripadvisor.com",
+  "nytimes.com", "sfchronicle.com", "infatuation.com", "zagat.com",
+  "michelin", "theguardian.com", "wsj.com", "latimes.com",
+  "grubstreet.com", "tasting-table.com", "seriouseats.com",
+  "foodandwine.com", "bon-appetit.com", "bonappetit.com",
+];
+
+function scoreCard(url: string, bizHost: string): number {
+  const d = getDomain(url);
+  if (bizHost && d.includes(bizHost)) return 10;
+  if (d.includes("linkedin.com")) return 7;
+  if (PRESS_DOMAINS.some((p) => d.includes(p))) return 5;
+  return 0;
+}
+
 function OgCard({ card }: { card: SourceCard }) {
   const domain = getDomain(card.url);
   const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
@@ -399,9 +415,12 @@ function Step2({
       {/* Card grid — landscape cards, wider layout */}
       {cards.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-6">
-          {cards.map((card) => (
-            <OgCard key={card.url} card={card} />
-          ))}
+          {(() => {
+            const bizHost = getDomain(websiteUrl);
+            return [...cards]
+              .sort((a, b) => scoreCard(b.url, bizHost) - scoreCard(a.url, bizHost))
+              .map((card) => <OgCard key={card.url} card={card} />);
+          })()}
         </div>
       )}
 
@@ -429,6 +448,84 @@ const PREVIEW_PHOTOS = [
   "/preview-photos/photo-5.jpeg",
 ];
 
+const CATEGORY_PHOTOS: Record<string, string[]> = {
+  alcohol: [
+    "/illustrations/alcohol/1.jpg",
+    "/illustrations/alcohol/2.jpg",
+    "/illustrations/alcohol/3.jpg",
+    "/illustrations/alcohol/4.jpg",
+    "/illustrations/alcohol/5.jpg",
+  ],
+  baker: [
+    "/illustrations/baker/1.jpg",
+    "/illustrations/baker/2.jpg",
+    "/illustrations/baker/3.jpg",
+    "/illustrations/baker/4.jpg",
+    "/illustrations/baker/5.jpg",
+  ],
+  butcher: [
+    "/illustrations/butcher/1.jpg",
+    "/illustrations/butcher/2.jpg",
+    "/illustrations/butcher/3.jpg",
+    "/illustrations/butcher/4.jpg",
+    "/illustrations/butcher/5.jpg",
+  ],
+  cheese: [
+    "/illustrations/cheese/1.jpg",
+    "/illustrations/cheese/2.jpg",
+    "/illustrations/cheese/3.jpg",
+    "/illustrations/cheese/4.jpg",
+    "/illustrations/cheese/5.jpg",
+  ],
+  provisions: [
+    "/illustrations/provisions/1.jpg",
+    "/illustrations/provisions/2.jpg",
+    "/illustrations/provisions/3.jpg",
+    "/illustrations/provisions/4.jpg",
+    "/illustrations/provisions/5.jpg",
+  ],
+  restaurant: [
+    "/illustrations/restaurant/1.jpg",
+    "/illustrations/restaurant/2.jpg",
+    "/illustrations/restaurant/3.jpg",
+    "/illustrations/restaurant/4.jpg",
+    "/illustrations/restaurant/5.jpg",
+  ],
+  wine: [
+    "/illustrations/wine/1.jpg",
+    "/illustrations/wine/2.jpg",
+    "/illustrations/wine/3.jpg",
+    "/illustrations/wine/4.jpg",
+    "/illustrations/wine/5.jpg",
+  ],
+};
+
+function getPreviewPhotos(businessType: string): string[] {
+  const t = businessType.toLowerCase();
+  if (t.includes("baker") || t.includes("bread") || t.includes("pastry") || t.includes("boulangerie") || t.includes("patisserie")) {
+    return CATEGORY_PHOTOS.baker;
+  }
+  if (t.includes("butcher") || t.includes("meat") || t.includes("charcuterie")) {
+    return CATEGORY_PHOTOS.butcher;
+  }
+  if (t.includes("cheese") || t.includes("fromagerie") || t.includes("dairy")) {
+    return CATEGORY_PHOTOS.cheese;
+  }
+  if (t.includes("wine") && !t.includes("bar")) {
+    return CATEGORY_PHOTOS.wine;
+  }
+  if (t.includes("alcohol") || t.includes("spirit") || t.includes("distill") || t.includes("brewery") || t.includes("beer") || t.includes("wine bar") || t.includes("bottle shop") || t.includes("liquor")) {
+    return CATEGORY_PHOTOS.alcohol;
+  }
+  if (t.includes("restaurant") || t.includes("bistro") || t.includes("cafe") || t.includes("diner") || t.includes("eatery") || t.includes("brasserie") || t.includes("tavern")) {
+    return CATEGORY_PHOTOS.restaurant;
+  }
+  if (t.includes("provision") || t.includes("grocer") || t.includes("deli") || t.includes("market") || t.includes("farm") || t.includes("produce") || t.includes("pantry")) {
+    return CATEGORY_PHOTOS.provisions;
+  }
+  return PREVIEW_PHOTOS;
+}
+
 // Phone bezel constants (matches /public/bezel.png)
 const BEZEL_W = 447, BEZEL_H = 906;
 const SCREEN_X = 25, SCREEN_Y = 19;
@@ -438,9 +535,11 @@ const SCALE = 0.62;
 function DropPhonePreview({
   drop,
   businessName,
+  photos,
 }: {
   drop: PreviewData["drop"];
   businessName: string;
+  photos: string[];
 }) {
   return (
     <div style={{ position: "relative", width: BEZEL_W * SCALE, height: BEZEL_H * SCALE, flexShrink: 0, margin: "0 auto" }}>
@@ -485,7 +584,7 @@ function DropPhonePreview({
                     <div style={{ flexShrink: 0, width: "62%", aspectRatio: "1/1", borderRadius: 4, overflow: "hidden", backgroundColor: "#f0efee" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={PREVIEW_PHOTOS[i % PREVIEW_PHOTOS.length]}
+                        src={photos[i % photos.length]}
                         alt={item.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
@@ -563,7 +662,7 @@ function PhoneBezel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SmsPhoneContent({ sms, businessName }: { sms: string; businessName: string }) {
+function SmsPhoneContent({ sms, businessName, photos }: { sms: string; businessName: string; photos: string[] }) {
   return (
     <div style={{ position: "relative", height: 843, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", overflow: "hidden" }}>
       {/* Navigation bar — status bar area + avatar + brand name */}
@@ -586,7 +685,7 @@ function SmsPhoneContent({ sms, businessName }: { sms: string; businessName: str
       {/* Photo bubble */}
       <div style={{ position: "absolute", top: 146, left: 36, width: 338, height: 332, backgroundColor: "#e6e5eb", borderRadius: 12, overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={PREVIEW_PHOTOS[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img src={photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       </div>
 
       {/* Text bubble */}
@@ -610,7 +709,7 @@ function SmsPhoneContent({ sms, businessName }: { sms: string; businessName: str
   );
 }
 
-function EmailPhoneContent({ email, businessName }: { email: PreviewData["email"]; businessName: string }) {
+function EmailPhoneContent({ email, businessName, photos }: { email: PreviewData["email"]; businessName: string; photos: string[] }) {
   return (
     <div style={{ position: "relative", height: 844, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* Status bar */}
@@ -660,7 +759,7 @@ function EmailPhoneContent({ email, businessName }: { email: PreviewData["email"
 
       {/* Photo */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={PREVIEW_PHOTOS[2]} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", flexShrink: 0 }} />
+      <img src={photos[2 % photos.length]} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", flexShrink: 0 }} />
 
       {/* Body */}
       <div style={{ padding: "16px", flex: 1, overflow: "hidden" }}>
@@ -675,7 +774,7 @@ function EmailPhoneContent({ email, businessName }: { email: PreviewData["email"
   );
 }
 
-function InstagramPhoneContent({ instagram, businessName }: { instagram: string; businessName: string }) {
+function InstagramPhoneContent({ instagram, businessName, photos }: { instagram: string; businessName: string; photos: string[] }) {
   return (
     <div style={{ position: "relative", height: 844, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", color: "#000", overflow: "hidden" }}>
       {/* Header bitmap — status bar + Instagram wordmark + icons */}
@@ -705,7 +804,7 @@ function InstagramPhoneContent({ instagram, businessName }: { instagram: string;
 
         {/* Photo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={PREVIEW_PHOTOS[3]} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
+        <img src={photos[3 % photos.length]} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
 
         {/* Action icons bitmap */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -766,6 +865,8 @@ function Step3({
     );
   }
 
+  const photos = getPreviewPhotos(tone.business_type);
+
   return (
     <div className="w-full max-w-7xl">
       <StepLabel step="03" label="Preview" />
@@ -799,24 +900,24 @@ function Step3({
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-6 mb-10 justify-items-center">
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Drop page</p>
-          <DropPhonePreview drop={preview.drop} businessName={businessName} />
+          <DropPhonePreview drop={preview.drop} businessName={businessName} photos={photos} />
         </div>
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">SMS</p>
           <PhoneBezel>
-            <SmsPhoneContent sms={preview.sms} businessName={businessName} />
+            <SmsPhoneContent sms={preview.sms} businessName={businessName} photos={photos} />
           </PhoneBezel>
         </div>
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Instagram</p>
           <PhoneBezel>
-            <InstagramPhoneContent instagram={preview.instagram} businessName={businessName} />
+            <InstagramPhoneContent instagram={preview.instagram} businessName={businessName} photos={photos} />
           </PhoneBezel>
         </div>
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Email</p>
           <PhoneBezel>
-            <EmailPhoneContent email={preview.email} businessName={businessName} />
+            <EmailPhoneContent email={preview.email} businessName={businessName} photos={photos} />
           </PhoneBezel>
         </div>
       </div>
