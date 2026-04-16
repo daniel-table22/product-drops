@@ -50,29 +50,14 @@ export function SectionIntro({
           className="bg-neutral-2 rounded-[16px] flex flex-col items-start"
           style={{ width: 652, paddingTop: 32, paddingBottom: 32, gap: 16 }}
         >
-          {/* Illustration wrapper — px-72 each side */}
+          {/* Illustration — natural aspect ratio at 256px tall */}
           <div className="w-full flex flex-col items-start" style={{ paddingLeft: 72, paddingRight: 72 }}>
-            {/* Outer: fixed size + blend mode */}
-            <div
-              className="relative mix-blend-multiply shrink-0"
-              style={{ width: 360, height: 241 }}
-            >
-              {/* Inner: clips the oversized image */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <img
-                  src={illustration}
-                  alt=""
-                  className="absolute select-none"
-                  style={{
-                    width: "130.61%",
-                    height: "129.95%",
-                    left: "-15.31%",
-                    top: "-12.18%",
-                    maxWidth: "none",
-                  }}
-                />
-              </div>
-            </div>
+            <img
+              src={illustration}
+              alt=""
+              className="mix-blend-multiply pointer-events-none select-none"
+              style={{ height: 256, width: "auto" }}
+            />
           </div>
 
           {/* Text + button — pl-32 pr-64, gap-10 between text block and button */}
