@@ -113,7 +113,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
   });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ backgroundColor: partner.bg_color }}>
       <div
         data-theme-root
         className="max-w-[400px] mx-auto min-h-screen"
