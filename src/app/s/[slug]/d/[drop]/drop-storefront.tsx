@@ -55,9 +55,16 @@ function useCountdown(target: string) {
     function tick() {
       const diff = new Date(target).getTime() - Date.now();
       if (diff <= 0) { setLabel(""); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      setLabel(`${h}h ${m}m`);
+      const totalHours = Math.floor(diff / 3600000);
+      if (totalHours >= 24) {
+        const d = Math.floor(totalHours / 24);
+        const h = totalHours % 24;
+        setLabel(`${d}d ${h}h`);
+      } else {
+        const h = totalHours;
+        const m = Math.floor((diff % 3600000) / 60000);
+        setLabel(`${h}h ${m}m`);
+      }
     }
     tick();
     const id = setInterval(tick, 30_000);
@@ -72,11 +79,6 @@ export function DropStorefront({ drop, partner, items }: Props) {
 
   const [cart, setCart] = useState<Record<string, number>>({});
 
-  // Apply brand bg to <body> so the page chrome matches the storefront theme
-  useEffect(() => {
-    document.body.style.backgroundColor = "#000";
-    return () => { document.body.style.backgroundColor = ""; };
-  }, [partner.bg_color]);
 
   const ordersOpen = drop.state === "orders_open";
   const countdown = useCountdown(drop.order_window_ends_at);
