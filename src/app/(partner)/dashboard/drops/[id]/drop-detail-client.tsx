@@ -589,6 +589,23 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
             </div>
           )}
 
+          {/* Per-item inventory summary */}
+          {dropItems.length > 0 && (
+            <div className="flex flex-wrap gap-3 max-w-2xl">
+              {dropItems.map((di) => {
+                const ordered = di.total_qty - di.available_qty;
+                const pct = di.total_qty > 0 ? Math.round((ordered / di.total_qty) * 100) : 0;
+                return (
+                  <div key={di.id} className="flex items-center gap-2 bg-neutral-2 rounded-3 px-3 py-1.5">
+                    <span className="text-size-2 text-neutral-11">{di.item.name}</span>
+                    <span className="text-size-2 font-medium tabular-nums text-neutral-12">{ordered}/{di.total_qty}</span>
+                    <span className="text-size-1 text-neutral-9">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {orders.length === 0 ? (
             <p className="text-size-2 text-neutral-10">No orders yet.</p>
           ) : (
