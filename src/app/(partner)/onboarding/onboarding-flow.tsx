@@ -460,7 +460,7 @@ function DropPhonePreview({
           {/* ── exact drop-storefront.tsx markup ── */}
           <div style={{ backgroundColor: "#fff", color: "#242021", fontFamily: "system-ui,-apple-system,sans-serif" }}>
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px 12px" }}>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", opacity: 0.7 }}>
                 {businessName}
               </p>
@@ -658,9 +658,13 @@ function EmailPhoneContent({ email, businessName }: { email: PreviewData["email"
       {/* Separator */}
       <div style={{ height: 1, backgroundColor: "#e5e5ea", flexShrink: 0 }} />
 
+      {/* Photo */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={PREVIEW_PHOTOS[2]} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", flexShrink: 0 }} />
+
       {/* Body */}
       <div style={{ padding: "16px", flex: 1, overflow: "hidden" }}>
-        <p style={{ margin: 0, fontSize: 17, color: "#000", lineHeight: 1.5 }}>{email.body}</p>
+        <p style={{ margin: 0, fontSize: 21, color: "#000", lineHeight: 1.5 }}>{email.body}</p>
       </div>
 
       {/* Home indicator */}
