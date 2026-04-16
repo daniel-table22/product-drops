@@ -26,11 +26,22 @@ export async function rewriteMarketingCopy(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: partner } = await supabase
+    .from("partners")
+    .select("tone")
+    .eq("user_id", user.id)
+    .single();
+
+  const tone = partner?.tone as { adjectives?: string[]; summary?: string } | null;
+  const toneContext = tone?.summary
+    ? `\n\nBrand tone of voice: ${tone.adjectives?.join(", ")}. ${tone.summary}`
+    : "";
+
   const promptContext = prompt.trim()
     ? `\n\nAdditional instruction from the user: "${prompt.trim()}"`
     : "";
 
-  const userMessage = `Business name: ${businessName}\n\nCurrent text to rewrite:\n\n"${currentText}"${promptContext}`;
+  const userMessage = `Business name: ${businessName}${toneContext}\n\nCurrent text to rewrite:\n\n"${currentText}"${promptContext}`;
 
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
