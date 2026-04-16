@@ -147,10 +147,12 @@ export function DropStorefront({ drop, partner, items }: Props) {
       {/* Hero */}
       <div className="mx-2 pt-2 pb-6 flex flex-col gap-2 text-center">
         <p className="text-lg font-semibold leading-snug">{drop.name}</p>
-        <p className="text-sm opacity-60">{pickupDate} · {partner.pickup_address}</p>
         {drop.description && (
           <p className="text-base opacity-70 leading-relaxed px-4">{drop.description}</p>
         )}
+        <div className="flex justify-center py-1">
+          <div className="w-[60%] border-t border-black/10" />
+        </div>
         {ordersOpen && countdown && (
           <p className="text-base font-mono" style={{ color: "var(--color-accent)" }}>
             Orders close in {countdown}
@@ -161,6 +163,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
             {drop.state === "scheduled" ? "Orders aren't open yet." : "Orders are closed for this drop."}
           </p>
         )}
+        <p className="text-sm opacity-60">{pickupDate} · {partner.pickup_address}</p>
       </div>
 
       {/* Item list — no card backgrounds, just stacked */}
