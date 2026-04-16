@@ -50,19 +50,14 @@ export function SectionIntro({
           className="bg-neutral-2 rounded-[16px] flex flex-col items-start"
           style={{ width: 652, paddingTop: 32, paddingBottom: 32, gap: 16 }}
         >
-          {/* Illustration — 256px tall, full inner width, crops portrait PNGs to landscape */}
+          {/* Illustration — 256px tall, natural width */}
           <div className="w-full" style={{ paddingLeft: 72, paddingRight: 72 }}>
-            <div
-              className="w-full mix-blend-multiply overflow-hidden"
-              style={{ height: 256 }}
-            >
-              <img
-                src={illustration}
-                alt=""
-                className="pointer-events-none select-none w-full h-full"
-                style={{ objectFit: "cover", objectPosition: "center 30%" }}
-              />
-            </div>
+            <img
+              src={illustration}
+              alt=""
+              className="mix-blend-multiply pointer-events-none select-none block"
+              style={{ height: "256px", width: "auto" }}
+            />
           </div>
 
           {/* Text + button — pl-32 pr-64, gap-10 between text block and button */}
