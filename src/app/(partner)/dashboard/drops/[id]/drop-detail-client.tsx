@@ -3,7 +3,7 @@
 import React, { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  FileText, AlignLeft, CalendarRange, Package, MessageSquare,
+  FileText, AlignLeft, CalendarRange, Package, MessageSquare, Mail, Phone,
 } from "lucide-react";
 import type { Tables, Database } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,36 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
       </div>
       <span className="w-36 shrink-0 text-size-2 text-neutral-10">{label}</span>
       <span className="flex-1 text-size-2 text-neutral-12 font-medium">{value}</span>
+    </div>
+  );
+}
+
+function ContactChip({ icon, value, type }: { icon: React.ReactNode; value: string; type: "email" | "phone" }) {
+  const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  function copy() {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div className="relative" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <button className="w-6 h-6 flex items-center justify-center rounded text-neutral-9 hover:text-neutral-12 hover:bg-neutral-3 transition-colors">
+        {icon}
+      </button>
+      {show && (
+        <div className="absolute bottom-full right-0 mb-2 z-20 bg-white border border-neutral-6 rounded-lg shadow-lg px-3 py-2 flex items-center gap-3 whitespace-nowrap">
+          <span className="text-size-1 text-neutral-12 font-medium">{value}</span>
+          {type === "email" && (
+            <a href={`mailto:${value}`} className="text-size-1 text-accent-11 hover:underline">Email</a>
+          )}
+          <button onClick={copy} className="text-size-1 text-neutral-10 hover:text-neutral-12 transition-colors">
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -567,18 +597,15 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 return (
                   <div key={order.id} className="border border-neutral-6 rounded-4 bg-surface overflow-hidden">
                     {/* Order header */}
-                    <div className="flex items-start justify-between gap-4 px-4 py-3 border-b border-neutral-6 bg-neutral-2">
-                      <div>
-                        <p className="font-medium text-neutral-12 text-size-2">{order.customer_name}</p>
-                        <p className="text-size-1 text-neutral-10">
-                          {order.customer_email}{order.customer_phone ? ` · ${order.customer_phone}` : ""}
-                        </p>
-                        <p className="text-size-1 text-neutral-11 mt-0.5 font-medium">
-                          {order.order_items.map((oi) => `${oi.item_name} ×${oi.qty}`).join(", ")}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-size-2 font-medium text-neutral-12">${(order.total_cents / 100).toFixed(2)}</span>
+                    <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-neutral-6 bg-neutral-2">
+                      <p className="font-medium text-neutral-12 text-size-2">{order.customer_name}</p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {order.customer_email && (
+                          <ContactChip icon={<Mail size={13} />} value={order.customer_email} type="email" />
+                        )}
+                        {order.customer_phone && (
+                          <ContactChip icon={<Phone size={13} />} value={order.customer_phone} type="phone" />
+                        )}
                         <OrderStateBadge state={order.state} />
                       </div>
                     </div>
@@ -591,35 +618,38 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                         </li>
                       ))}
                     </ul>
-                    {/* Status checkboxes */}
-                    <div className="flex items-center gap-6 px-4 py-3 border-t border-neutral-6 bg-neutral-1">
-                      <label className={[
-                        "flex items-center gap-2 select-none",
-                        order.state === "paid" && !isPending ? "cursor-pointer" : "cursor-default opacity-60",
-                      ].join(" ")}>
-                        <input
-                          type="checkbox"
-                          checked={order.state === "ready" || order.state === "picked_up"}
-                          disabled={order.state !== "paid" || isPending}
-                          onChange={() => handleOrderState(order.id, "ready")}
-                          className="w-4 h-4 rounded accent-neutral-12 cursor-pointer disabled:cursor-default"
-                        />
-                        <span className="text-size-2 text-neutral-11">Ready</span>
-                      </label>
-                      <label className={[
-                        "flex items-center gap-2 select-none",
-                        order.state === "ready" && pickupOpen && !isPending ? "cursor-pointer" : "cursor-default opacity-60",
-                      ].join(" ")}>
-                        <input
-                          type="checkbox"
-                          checked={order.state === "picked_up"}
-                          disabled={order.state !== "ready" || !pickupOpen || isPending}
-                          onChange={() => handleOrderState(order.id, "picked_up")}
-                          title={order.state === "ready" && !pickupOpen ? `Pickup opens ${new Date(drop.pickup_window_starts_at).toLocaleDateString()}` : undefined}
-                          className="w-4 h-4 rounded accent-neutral-12 cursor-pointer disabled:cursor-default"
-                        />
-                        <span className="text-size-2 text-neutral-11">Picked up</span>
-                      </label>
+                    {/* Status checkboxes + total */}
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-6 bg-neutral-1">
+                      <div className="flex items-center gap-6">
+                        <label className={[
+                          "flex items-center gap-2 select-none",
+                          order.state === "paid" && !isPending ? "cursor-pointer" : "cursor-default opacity-60",
+                        ].join(" ")}>
+                          <input
+                            type="checkbox"
+                            checked={order.state === "ready" || order.state === "picked_up"}
+                            disabled={order.state !== "paid" || isPending}
+                            onChange={() => handleOrderState(order.id, "ready")}
+                            className="w-4 h-4 rounded accent-neutral-12 cursor-pointer disabled:cursor-default"
+                          />
+                          <span className="text-size-2 text-neutral-11">Ready</span>
+                        </label>
+                        <label className={[
+                          "flex items-center gap-2 select-none",
+                          order.state === "ready" && pickupOpen && !isPending ? "cursor-pointer" : "cursor-default opacity-60",
+                        ].join(" ")}>
+                          <input
+                            type="checkbox"
+                            checked={order.state === "picked_up"}
+                            disabled={order.state !== "ready" || !pickupOpen || isPending}
+                            onChange={() => handleOrderState(order.id, "picked_up")}
+                            title={order.state === "ready" && !pickupOpen ? `Pickup opens ${new Date(drop.pickup_window_starts_at).toLocaleDateString()}` : undefined}
+                            className="w-4 h-4 rounded accent-neutral-12 cursor-pointer disabled:cursor-default"
+                          />
+                          <span className="text-size-2 text-neutral-11">Picked up</span>
+                        </label>
+                      </div>
+                      <span className="text-size-2 font-medium text-neutral-12">${(order.total_cents / 100).toFixed(2)}</span>
                     </div>
                   </div>
                 );
