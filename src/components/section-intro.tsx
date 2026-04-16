@@ -10,6 +10,8 @@ interface Props {
   buttonLabel?: string;
   /** Preview mode — bypasses localStorage, always shows the intro card */
   forceShow?: boolean;
+  /** Called when the card is dismissed */
+  onDismiss?: () => void;
   children: React.ReactNode;
 }
 
@@ -20,6 +22,7 @@ export function SectionIntro({
   description,
   buttonLabel = "Show me",
   forceShow = false,
+  onDismiss,
   children,
 }: Props) {
   const [dismissed, setDismissed] = useState<boolean | null>(null);
@@ -37,6 +40,7 @@ export function SectionIntro({
       localStorage.setItem(storageKey, "1");
       setDismissed(true);
       setOpacity(1);
+      onDismiss?.();
     }, 180);
   }
 

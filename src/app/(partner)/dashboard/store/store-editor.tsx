@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
@@ -37,9 +37,16 @@ const SCREEN_Y = 19;
 const SCREEN_W = 393;
 const SCREEN_H = 859;
 
+const STORE_INTRO_KEY = "intro_dismissed_storefront";
+
 export function StoreEditor({ partner, userId }: { partner: Partner; userId: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewTab, setPreviewTab] = useState<"storefront" | "drop">("storefront");
+  const [introDismissed, setIntroDismissed] = useState(false);
+
+  useEffect(() => {
+    setIntroDismissed(!!localStorage.getItem(STORE_INTRO_KEY));
+  }, []);
 
   const storefrontUrl = `/s/${partner.slug}`;
   const dropUrl = partner.slug ? `/s/${partner.slug}/d/preview` : null;
@@ -65,10 +72,11 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
         <PageHeader title="Store" size="large" />
 
         <SectionIntro
-          storageKey="intro_dismissed_storefront"
+          storageKey={STORE_INTRO_KEY}
           illustration="/illustrations/storefront-intro.png"
           title="Make it yours"
           description="Set up your public storefront — brand colors, logo, and intro copy so customers recognize you instantly."
+          onDismiss={() => setIntroDismissed(true)}
         >
         <form action={updateStore} className="space-y-6">
           <div className="space-y-4">
@@ -220,8 +228,8 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
         </SectionIntro>
       </div>
 
-      {/* Right: phone preview */}
-      {partner.slug && (
+      {/* Right: phone preview — hidden while intro card is showing */}
+      {partner.slug && introDismissed && (
         <div className="hidden lg:flex flex-col items-center justify-start flex-1 bg-neutral-3 -mr-8 -my-10 px-10 pt-10 pb-10 gap-3">
           {/* Preview note */}
           <p className="text-size-1 text-neutral-10 text-center self-center">
