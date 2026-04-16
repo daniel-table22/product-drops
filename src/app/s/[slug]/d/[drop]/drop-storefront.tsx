@@ -165,7 +165,7 @@ export function DropStorefront({ drop, partner, items }: Props) {
             {drop.state === "scheduled" ? "Orders aren't open yet." : "Orders are closed for this drop."}
           </p>
         )}
-        <p className="text-sm opacity-60">{pickupDate} · {partner.pickup_address}</p>
+        <p className="text-sm opacity-60">{partner.pickup_address}</p>
       </div>
 
       {/* Item list — no card backgrounds, just stacked */}
