@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Megaphone,
   LogOut,
+  GalleryHorizontal,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -85,9 +86,11 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 export function Sidenav({
   partnerSlug,
+  logoUrl,
   activeDrops,
 }: {
   partnerSlug: string;
+  logoUrl: string | null;
   activeDrops: ActiveDrop[];
 }) {
   const pathname = usePathname();
@@ -102,7 +105,11 @@ export function Sidenav({
       {/* Logo */}
       <div className="mb-6 px-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="Logo" className="h-6 w-auto" />
+        {logoUrl ? (
+          <img src={logoUrl} alt="Logo" className="h-8 w-auto max-w-[140px] object-contain" />
+        ) : (
+          <img src="/logo.svg" alt="Logo" className="h-6 w-auto" />
+        )}
       </div>
 
       {/* Nav groups */}
@@ -174,6 +181,15 @@ export function Sidenav({
           </div>
         )}
       </nav>
+
+      {/* Illustration templates */}
+      <Link
+        href="/dashboard/illustration-templates"
+        className="flex items-center gap-2 px-2 py-2 rounded-md w-full text-sm text-neutral-10 hover:bg-neutral-3 hover:text-neutral-12 transition-colors"
+      >
+        <GalleryHorizontal size={16} className="shrink-0 opacity-70" />
+        <span>Illustration templates</span>
+      </Link>
 
       {/* Logout */}
       <button

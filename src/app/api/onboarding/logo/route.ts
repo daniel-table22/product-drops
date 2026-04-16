@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 function extractDomain(url: string): string {
   try {
@@ -13,12 +14,10 @@ function extractDomain(url: string): string {
 const LOGO_MIN_BYTES = 1500;
 
 export async function POST(request: NextRequest) {
-  const { websiteUrl } = await request.json() as { websiteUrl: string };
+  const { websiteUrl, partnerId } = await request.json() as { websiteUrl: string; partnerId: string };
 
   const pk = process.env.LOGO_DEV_PUBLISHABLE_KEY;
-  if (!pk || !websiteUrl) {
-    return NextResponse.json({ logoUrl: null });
-  }
+  if (!pk || !websiteUrl) return NextResponse.json({ logoUrl: null });
 
   const domain = extractDomain(websiteUrl);
   const logoDevUrl = `https://img.logo.dev/${domain}?token=${pk}&size=200&format=png&retina=true`;
@@ -27,9 +26,8 @@ export async function POST(request: NextRequest) {
     const logoRes = await fetch(logoDevUrl);
     if (!logoRes.ok) return NextResponse.json({ logoUrl: null });
 
-    const logoBytes = Buffer.from(await logoRes.arrayBuffer());
+    let logoBytes = Buffer.from(await logoRes.arrayBuffer());
 
-    // Treat anything suspiciously small as a placeholder — fall back to text
     if (logoBytes.length < LOGO_MIN_BYTES) {
       return NextResponse.json({ logoUrl: null });
     }
@@ -40,23 +38,38 @@ export async function POST(request: NextRequest) {
       try {
         const rbRes = await fetch("https://api.remove.bg/v1.0/removebg", {
           method: "POST",
-          headers: {
-            "X-Api-Key": removeBgKey,
-            "Content-Type": "application/json",
-          },
+          headers: { "X-Api-Key": removeBgKey, "Content-Type": "application/json" },
           body: JSON.stringify({ image_url: logoDevUrl, size: "auto" }),
         });
         if (rbRes.ok) {
-          const stripped = Buffer.from(await rbRes.arrayBuffer());
-          const b64 = stripped.toString("base64");
-          return NextResponse.json({ logoUrl: `data:image/png;base64,${b64}` });
+          logoBytes = Buffer.from(await rbRes.arrayBuffer());
         }
       } catch {
-        // fall through to raw logo
+        // keep original logo bytes
       }
     }
 
-    // No remove.bg — return as base64 data URL to avoid CORS issues
+    // Upload to Supabase Storage and persist the public URL
+    const serviceClient = createServiceClient();
+    const storagePath = `${partnerId}/logo/logo.png`;
+
+    const { error: uploadError } = await serviceClient.storage
+      .from("partner-assets")
+      .upload(storagePath, logoBytes, { contentType: "image/png", upsert: true });
+
+    if (!uploadError) {
+      const { data } = serviceClient.storage.from("partner-assets").getPublicUrl(storagePath);
+      const publicUrl = data.publicUrl;
+
+      await serviceClient
+        .from("partners")
+        .update({ logo_url: publicUrl })
+        .eq("id", partnerId);
+
+      return NextResponse.json({ logoUrl: publicUrl });
+    }
+
+    // Storage failed — fall back to base64 so the preview still works
     return NextResponse.json({ logoUrl: `data:image/png;base64,${logoBytes.toString("base64")}` });
   } catch {
     return NextResponse.json({ logoUrl: null });

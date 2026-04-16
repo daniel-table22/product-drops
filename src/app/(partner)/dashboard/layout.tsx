@@ -16,7 +16,7 @@ export default async function DashboardLayout({
 
   const { data: partner } = await supabase
     .from("partners")
-    .select("id, slug")
+    .select("id, slug, logo_url")
     .eq("user_id", user.id)
     .single();
 
@@ -32,6 +32,7 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen">
       <Sidenav
         partnerSlug={partner?.slug ?? ""}
+        logoUrl={partner?.logo_url ?? null}
         activeDrops={(activeDrops ?? []).map((d) => ({ id: d.id, name: d.name, slug: d.slug }))}
       />
       <main className="flex-1 bg-white">{children}</main>

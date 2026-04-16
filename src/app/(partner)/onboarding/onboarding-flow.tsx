@@ -329,7 +329,7 @@ function Step2({
         const logoPromise = fetch("/api/onboarding/logo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ websiteUrl }),
+          body: JSON.stringify({ websiteUrl, partnerId }),
         })
           .then((r) => r.ok ? r.json() : {})
           .then((d: { logoUrl?: string; logoDataUrl?: string }) => d.logoDataUrl ?? d.logoUrl ?? null)
