@@ -196,7 +196,11 @@ export async function seedOrders(dropId: string, mode: "full" | "partial") {
   // Build pool of available units per item
   // Partial mode fills items at staggered rates: item 1 → 50%, item 2 → 90%, item 3+ → 100%
   const PARTIAL_RATES = [0.5, 0.9, 1.0];
-  type Pool = { dropItemId: string; name: string; priceCents: number; remaining: number };
+  type Pool = {
+    dropItemId: string; name: string; priceCents: number;
+    remaining: number;   // units left to allocate in this seed run
+    dbAvailable: number; // tracks the real available_qty to write back
+  };
   const pool: Pool[] = rawItems
     .filter((i) => i.available_qty > 0)
     .map((i, idx) => {
@@ -206,6 +210,7 @@ export async function seedOrders(dropId: string, mode: "full" | "partial") {
         name: (i.items as { name: string }).name,
         priceCents: i.price_cents,
         remaining: Math.max(1, Math.floor(i.available_qty * rate)),
+        dbAvailable: i.available_qty,
       };
     });
 
@@ -233,6 +238,7 @@ export async function seedOrders(dropId: string, mode: "full" | "partial") {
       const qty = Math.floor(Math.random() * maxQty) + 1;
       lines.push({ dropItemId: item.dropItemId, name: item.name, priceCents: item.priceCents, qty });
       item.remaining -= qty;
+      item.dbAvailable -= qty;
     }
 
     const subtotalCents = lines.reduce((s, l) => s + l.priceCents * l.qty, 0);
@@ -270,7 +276,7 @@ export async function seedOrders(dropId: string, mode: "full" | "partial") {
     for (const l of lines) {
       await supabase
         .from("drop_items")
-        .update({ available_qty: pool.find((p) => p.dropItemId === l.dropItemId)!.remaining })
+        .update({ available_qty: pool.find((p) => p.dropItemId === l.dropItemId)!.dbAvailable })
         .eq("id", l.dropItemId);
     }
 
