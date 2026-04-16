@@ -669,27 +669,107 @@ function PhoneBezel({ children }: { children: React.ReactNode }) {
 
 function SmsPhoneContent({ sms, businessName }: { sms: string; businessName: string }) {
   return (
-    <div style={{ backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={PREVIEW_PHOTOS[0]} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
-      <div style={{ padding: "16px" }}>
-        <p style={{ margin: "0 0 12px", fontSize: 11, color: "#888", textAlign: "center", letterSpacing: "0.05em", textTransform: "uppercase" }}>{businessName}</p>
-        <div style={{ backgroundColor: "#e5e5ea", borderRadius: "18px 18px 18px 4px", padding: "10px 14px", maxWidth: "85%" }}>
-          <p style={{ margin: 0, fontSize: 18, color: "#000", lineHeight: 1.45 }}>{sms}</p>
+    <div style={{ position: "relative", height: 843, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", overflow: "hidden" }}>
+      {/* Navigation bar — status bar area + avatar + brand name */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 118, backgroundColor: "#f4f4f4", borderBottom: "1px solid #ddd" }}>
+        <div style={{
+          position: "absolute", left: "50%", top: 68,
+          transform: "translateX(-50%) translateY(-50%)",
+          width: 40, height: 40, borderRadius: "50%", backgroundColor: "#784545",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{ color: "white", fontSize: 16, fontWeight: 600 }}>{businessName.charAt(0).toUpperCase()}</span>
         </div>
+        <p style={{
+          position: "absolute", left: "50%", top: 100,
+          transform: "translateX(-50%) translateY(-50%)",
+          margin: 0, fontSize: 11, color: "#000", whiteSpace: "nowrap",
+        }}>{businessName}</p>
       </div>
+
+      {/* Photo bubble */}
+      <div style={{ position: "absolute", top: 146, left: 36, width: 338, height: 332, backgroundColor: "#e6e5eb", borderRadius: 12, overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={PREVIEW_PHOTOS[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      </div>
+
+      {/* Text bubble */}
+      <div style={{ position: "absolute", top: 504, left: 15, width: 325, backgroundColor: "#e6e5eb", borderRadius: 12, padding: 12 }}>
+        {/* Bubble tail */}
+        <div style={{ position: "absolute", bottom: -12, left: 3, width: 20, height: 14 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/sms-chrome/tail.svg" alt="" style={{ width: "100%", height: "100%", display: "block" }} />
+        </div>
+        <p style={{ margin: 0, fontSize: 21, lineHeight: "26px", color: "#000" }}>{sms}</p>
+      </div>
+
+      {/* Static bottom bar — iMessage input + home indicator */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/sms-chrome/static.png"
+        alt=""
+        style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 87, objectFit: "cover", pointerEvents: "none", userSelect: "none" }}
+      />
     </div>
   );
 }
 
-function EmailPhoneContent({ email }: { email: PreviewData["email"] }) {
+function EmailPhoneContent({ email, businessName }: { email: PreviewData["email"]; businessName: string }) {
   return (
-    <div style={{ backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={PREVIEW_PHOTOS[2]} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
-      <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "#000", lineHeight: 1.3 }}>{email.subject}</p>
-        <p style={{ margin: 0, fontSize: 18, color: "#555", lineHeight: 1.55 }}>{email.body}</p>
+    <div style={{ position: "relative", height: 844, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Status bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px 0", flexShrink: 0 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: -0.3 }}>9:41</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="black"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="3" width="3" height="9" rx="0.5"/><rect x="13.5" y="0" width="3" height="12" rx="0.5" fillOpacity="0.35"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.4C10.3 2.4 12.4 3.4 13.9 5L15.4 3.5C13.5 1.6 10.9 0.5 8 0.5C5.1 0.5 2.5 1.6 0.6 3.5L2.1 5C3.6 3.4 5.7 2.4 8 2.4Z" fill="black"/><path d="M8 5.3C9.5 5.3 10.9 5.9 11.9 6.9L13.4 5.4C12 4 10.1 3.2 8 3.2C5.9 3.2 4 4 2.6 5.4L4.1 6.9C5.1 5.9 6.5 5.3 8 5.3Z" fill="black"/><circle cx="8" cy="10" r="1.5" fill="black"/></svg>
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x="0.5" y="0.5" width="22" height="12" rx="3.5" stroke="black" strokeOpacity="0.35"/><rect x="2" y="2" width="18" height="9" rx="2" fill="black"/><path d="M24 4.5V8.5C25.1 8.2 26 7.4 26 6.5C26 5.6 25.1 4.8 24 4.5Z" fill="black" fillOpacity="0.4"/></svg>
+        </div>
+      </div>
+
+      {/* Nav bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 16px 8px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#007aff" }}>
+          <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="#007aff" strokeWidth="2" strokeLinecap="round"><polyline points="9 1 1 8.5 9 16"/></svg>
+          <span style={{ fontSize: 17, color: "#007aff" }}>Inbox</span>
+        </div>
+        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007aff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007aff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div style={{ height: 1, backgroundColor: "#e5e5ea", flexShrink: 0 }} />
+
+      {/* Subject */}
+      <div style={{ padding: "16px 16px 12px", flexShrink: 0 }}>
+        <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#000", lineHeight: 1.25 }}>{email.subject}</p>
+      </div>
+
+      {/* Sender row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px 14px", flexShrink: 0 }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#784545", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ color: "white", fontSize: 16, fontWeight: 600 }}>{businessName.charAt(0).toUpperCase()}</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#000", lineHeight: 1.3 }}>{businessName}</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#888", lineHeight: 1.3 }}>To: me</p>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: "#888", flexShrink: 0 }}>Today</p>
+      </div>
+
+      {/* Separator */}
+      <div style={{ height: 1, backgroundColor: "#e5e5ea", flexShrink: 0 }} />
+
+      {/* Body */}
+      <div style={{ padding: "16px", flex: 1, overflow: "hidden" }}>
+        <p style={{ margin: 0, fontSize: 17, color: "#000", lineHeight: 1.5 }}>{email.body}</p>
+      </div>
+
+      {/* Home indicator */}
+      <div style={{ height: 34, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 134, height: 5, borderRadius: 100, backgroundColor: "#000" }} />
       </div>
     </div>
   );
@@ -703,7 +783,7 @@ function InstagramPhoneContent({ instagram, businessName }: { instagram: string;
       <img
         src="/instagram-chrome/header.png"
         alt=""
-        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 91, objectFit: "cover", pointerEvents: "none", userSelect: "none" }}
+        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 91, objectFit: "cover", objectPosition: "top", pointerEvents: "none", userSelect: "none" }}
       />
 
       {/* Dynamic content — starts at 88px per Figma layout */}
@@ -836,7 +916,7 @@ function Step3({
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Email</p>
           <PhoneBezel>
-            <EmailPhoneContent email={preview.email} />
+            <EmailPhoneContent email={preview.email} businessName={businessName} />
           </PhoneBezel>
         </div>
       </div>
