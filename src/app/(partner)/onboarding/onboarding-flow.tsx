@@ -205,62 +205,53 @@ type OgData = {
 // null = still loading, object = resolved (may be empty if fetch failed)
 type SourceCard = { url: string; label: string; og: OgData | null };
 
-// Deterministic scatter per card index
-const ROTATIONS = [-3, 2, -5, 4, -2, 5, -4, 3, -1, 4, -3, 2];
-const NUDGE_Y   = [0, -5, 3, -7, 5, -3, 7, -2, 4, -6, 2, -4];
-
 function getDomain(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ""); }
   catch { return url; }
 }
 
-function OgCard({ card, index }: { card: SourceCard; index: number }) {
-  const rotate = ROTATIONS[index % ROTATIONS.length];
-  const nudge  = NUDGE_Y[index % NUDGE_Y.length];
+function OgCard({ card }: { card: SourceCard }) {
   const domain = getDomain(card.url);
   const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
   const loading = card.og === null;
   const hasImage = !!card.og?.image;
 
   return (
-    <div style={{ transform: `rotate(${rotate}deg) translateY(${nudge}px)` }}>
-      <div
-        className="rounded-xl border border-neutral-5 bg-white shadow-sm overflow-hidden"
-        style={{ animation: "cardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
-      >
-        {/* Image strip */}
-        {loading ? (
-          <div className="h-24 bg-neutral-3 animate-pulse" />
-        ) : hasImage ? (
-          <div className="h-24 overflow-hidden bg-neutral-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={card.og!.image!} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-          </div>
-        ) : (
-          <div className="h-16 bg-neutral-2 flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={favicon} alt="" className="w-6 h-6 opacity-30" />
-          </div>
-        )}
-
-        {/* Meta */}
-        <div className="px-3 py-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={favicon} alt="" className="w-3 h-3 shrink-0" />
-            <p className="text-[10px] text-neutral-8 truncate">{domain}</p>
-          </div>
-          {loading ? (
-            <div className="space-y-1">
-              <div className="h-2.5 bg-neutral-3 rounded animate-pulse w-3/4" />
-              <div className="h-2.5 bg-neutral-3 rounded animate-pulse w-1/2" />
-            </div>
-          ) : (
-            <p className="text-xs font-medium text-neutral-12 leading-snug line-clamp-2">
-              {card.og?.title ?? card.label}
-            </p>
-          )}
+    <div
+      className="rounded-xl border border-neutral-5 bg-white shadow-sm overflow-hidden"
+      style={{ animation: "cardIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both" }}
+    >
+      {/* Image — landscape 16:9 */}
+      {loading ? (
+        <div className="aspect-video bg-neutral-2 flex items-center justify-center">
+          <div className="w-5 h-5 rounded-full border-2 border-neutral-4 border-t-neutral-9 animate-spin" />
         </div>
+      ) : hasImage ? (
+        <div className="aspect-video overflow-hidden bg-neutral-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={card.og!.image!} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        </div>
+      ) : (
+        <div className="aspect-video bg-neutral-2 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={favicon} alt="" className="w-8 h-8 opacity-25" />
+        </div>
+      )}
+
+      {/* Meta */}
+      <div className="px-2.5 py-2">
+        <div className="flex items-center gap-1.5 mb-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={favicon} alt="" className="w-3 h-3 shrink-0" />
+          <p className="text-[10px] text-neutral-8 truncate">{domain}</p>
+        </div>
+        {loading ? (
+          <div className="h-2.5 bg-neutral-3 rounded w-3/4" />
+        ) : (
+          <p className="text-[11px] font-medium text-neutral-12 leading-snug line-clamp-2">
+            {card.og?.title ?? card.label}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -284,11 +275,8 @@ function Step2({
   onRetry: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"streaming" | "reveal">("streaming");
   const [cards, setCards] = useState<SourceCard[]>([]);
   const [currentQuery, setCurrentQuery] = useState<string | null>(null);
-  const [tone, setTone] = useState<ToneData | null>(null);
-  const [preview, setPreview] = useState<PreviewData | null>(null);
   const started = useRef(false);
 
   useEffect(() => {
@@ -331,20 +319,14 @@ function Step2({
             } else if (data.type === "source") {
               const url = data.url as string;
               const label = data.label as string;
-              // Add card immediately in loading state
               setCards((c) => [...c, { url, label, og: null }]);
-              // Fetch OG in background — no await, fire & forget
               fetch(`/api/og?url=${encodeURIComponent(url)}`)
                 .then((r) => (r.ok ? r.json() : {}))
                 .then((og: OgData) => {
-                  setCards((c) =>
-                    c.map((card) => card.url === url ? { ...card, og } : card)
-                  );
+                  setCards((c) => c.map((card) => card.url === url ? { ...card, og } : card));
                 })
                 .catch(() => {
-                  setCards((c) =>
-                    c.map((card) => card.url === url ? { ...card, og: {} } : card)
-                  );
+                  setCards((c) => c.map((card) => card.url === url ? { ...card, og: {} } : card));
                 });
             } else if (data.type === "done") {
               resolvedTone = data.tone as ToneData;
@@ -359,10 +341,7 @@ function Step2({
         const previewResult = await generatePreview(resolvedTone, businessName);
         if ("error" in previewResult) throw new Error(previewResult.error);
 
-        setTone(resolvedTone);
-        setPreview(previewResult.preview);
-        setCurrentQuery(null);
-        setPhase("reveal");
+        onComplete(resolvedTone, previewResult.preview);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       }
@@ -390,132 +369,49 @@ function Step2({
     );
   }
 
-  // ── streaming phase: OG card pile ──
-  if (phase === "streaming") {
-    return (
-      <div className="w-full max-w-xl">
-        <StepLabel step="02" label="Brand research" />
-        <h1 className="text-3xl font-semibold tracking-tight text-neutral-12 mb-1">
-          The Mystery Part
-        </h1>
-        <p className="text-sm text-neutral-10 mb-6">
-          Reading everything we can find about your brand.
-        </p>
-
-        {/* Spinner + query — always at top */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-3 h-3 rounded-full border-2 border-neutral-4 border-t-neutral-9 animate-spin shrink-0" />
-          {currentQuery ? (
-            <p
-              className="text-xs text-neutral-8 italic truncate"
-              style={{ animation: "fadeSlideIn 0.2s ease both" }}
-            >
-              Searching: &ldquo;{currentQuery}&rdquo;
-            </p>
-          ) : (
-            <p className="text-xs text-neutral-8">
-              {cards.length === 0 ? "Starting up…" : "This takes about a minute…"}
-            </p>
-          )}
-        </div>
-
-        {/* Card grid — up to 6 columns */}
-        {cards.length > 0 && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-            {cards.map((card, i) => (
-              <OgCard key={card.url} card={card} index={i} />
-            ))}
-          </div>
-        )}
-
-        <style>{`
-          @keyframes cardIn {
-            from { opacity: 0; transform: scale(0.88) translateY(12px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-          }
-          @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // ── reveal phase: tone + sources summary ──
   return (
-    <div className="w-full max-w-lg">
+    <div className="w-full max-w-4xl">
       <StepLabel step="02" label="Brand research" />
       <h1 className="text-3xl font-semibold tracking-tight text-neutral-12 mb-1">
         The Mystery Part
       </h1>
-      <p className="text-sm text-neutral-10 mb-8">
-        Here&apos;s what we learned about your brand.
+      <p className="text-sm text-neutral-10 mb-6">
+        Reading everything we can find about your brand.
       </p>
 
-      {tone && (
-        <div className="space-y-6">
-          {/* Tone signature */}
-          <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-9 mb-2">
-              Tone signature
-            </p>
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {tone.tone.adjectives.map((adj) => (
-                <span
-                  key={adj}
-                  className="px-3 py-1 rounded-full text-xs font-medium bg-neutral-3 text-neutral-11 border border-neutral-5"
-                >
-                  {adj}
-                </span>
-              ))}
-            </div>
-            <div className="border-l-2 border-[#c8a89a] bg-[#fdf5f2] rounded-r-lg px-4 py-3">
-              <p className="text-sm text-neutral-12 leading-relaxed">{tone.tone.summary}</p>
-            </div>
-          </div>
+      {/* Spinner + query */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-3 h-3 rounded-full border-2 border-neutral-4 border-t-neutral-9 animate-spin shrink-0" />
+        {currentQuery ? (
+          <p
+            className="text-xs text-neutral-8 italic truncate"
+            style={{ animation: "fadeSlideIn 0.2s ease both" }}
+          >
+            Searching: &ldquo;{currentQuery}&rdquo;
+          </p>
+        ) : (
+          <p className="text-xs text-neutral-8">
+            {cards.length === 0 ? "Starting up…" : "Building your preview…"}
+          </p>
+        )}
+      </div>
 
-          {/* Sources */}
-          {(tone.sources ?? []).length > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-9 mb-2">
-                Sources read
-              </p>
-              <div className="space-y-2">
-                {(tone.sources ?? []).map((source, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 p-3 rounded-lg border border-neutral-5 bg-white"
-                    style={{ animation: `fadeSlideIn 0.3s ease ${i * 80}ms both` }}
-                  >
-                    <div className="mt-0.5 w-4 h-4 rounded border-2 border-neutral-12 bg-neutral-12 flex items-center justify-center shrink-0">
-                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                        <path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-neutral-12 leading-snug">{source.label}</p>
-                      <p className="text-xs text-neutral-8 truncate mt-0.5">{source.url}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {preview && (
-            <div style={{ animation: "fadeSlideIn 0.3s ease both" }}>
-              <Button className="w-full" onClick={() => onComplete(tone, preview)}>
-                See the magic →
-              </Button>
-            </div>
-          )}
+      {/* Card grid — landscape cards, wider layout */}
+      {cards.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-6">
+          {cards.map((card) => (
+            <OgCard key={card.url} card={card} />
+          ))}
         </div>
       )}
 
       <style>{`
+        @keyframes cardIn {
+          from { opacity: 0; transform: translateY(10px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
         @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(6px); }
+          from { opacity: 0; transform: translateY(4px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
