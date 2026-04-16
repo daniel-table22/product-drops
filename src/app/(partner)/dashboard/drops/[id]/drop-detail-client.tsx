@@ -350,7 +350,9 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                           </div>
                           <span className="flex-1 text-size-2 font-medium text-neutral-12 truncate">{di.item.name}</span>
                           <span className="text-size-2 text-neutral-10 mr-4">${(di.price_cents / 100).toFixed(2)}</span>
-                          <span className="text-size-2 text-neutral-10 w-16 text-right">{di.total_qty} qty</span>
+                          <span className="text-size-2 text-neutral-10 text-right tabular-nums">
+                            {di.total_qty - di.available_qty} / {di.total_qty} ordered
+                          </span>
                         </div>
                       ))}
                     </div>
