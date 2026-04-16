@@ -111,10 +111,10 @@ export function DropStorefront({ drop, partner, items }: Props) {
   });
 
   return (
-    <div className="min-h-screen bg-black md:flex md:items-center md:justify-center">
+    <div className="min-h-screen bg-white">
       <div
         data-theme-root
-        className="max-w-[400px] mx-auto min-h-screen md:min-h-0 md:h-[800px] md:overflow-y-auto md:rounded-[24px] md:w-full"
+        className="max-w-[400px] mx-auto min-h-screen"
         style={{
           backgroundColor: partner.bg_color,
           color: partner.fg_color,
