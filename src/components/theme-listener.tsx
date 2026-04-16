@@ -11,7 +11,6 @@ export function ThemeListener() {
       if (e.data.bgColor) {
         el.style.backgroundColor = e.data.bgColor;
         el.style.setProperty("--color-bg", e.data.bgColor);
-        document.body.style.backgroundColor = e.data.bgColor;
       }
       if (e.data.fgColor) {
         el.style.color = e.data.fgColor;
