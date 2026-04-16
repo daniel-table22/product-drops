@@ -56,7 +56,7 @@ export function SectionIntro({
               src={illustration}
               alt=""
               className="mix-blend-multiply pointer-events-none select-none block"
-              style={{ height: "256px", width: "auto" }}
+              style={{ height: "160px", width: "auto" }}
             />
           </div>
 
