@@ -1,17 +1,7 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
 import { stripe } from "@/lib/stripe/client";
-import type { Database } from "@/types/database";
-
-// Anon client — reads public data via RLS (no cookies needed for storefront)
-function createAnonClient() {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
 
 type CartLine = {
   drop_item_id: string;
@@ -23,7 +13,6 @@ type CartLine = {
 export async function createCheckoutSession(
   formData: FormData
 ): Promise<{ url: string } | { error: string }> {
-  const db = createAnonClient();
   const serviceClient = createServiceClient();
 
   const drop_id = formData.get("drop_id") as string;
@@ -69,9 +58,9 @@ export async function createCheckoutSession(
     return { error: "This store cannot accept payments right now." };
   }
 
-  // Atomically decrement available_qty (needs service role to write)
+  // Atomically decrement available_qty
   for (const line of cartLines) {
-    const { data: dropItem } = await db
+    const { data: dropItem } = await serviceClient
       .from("drop_items")
       .select("available_qty")
       .eq("id", line.drop_item_id)
@@ -167,7 +156,6 @@ export async function createPaymentIntent(
   params: CreatePaymentIntentParams
 ): Promise<{ clientSecret: string; paymentIntentId: string; pendingOrderId: string } | { error: string }> {
   const { dropId, cartLines, subtotalCents, partnerStripeAccountId, customerName, customerEmail, customerPhone } = params;
-  const db = createAnonClient();
   const serviceClient = createServiceClient();
 
   // Verify drop state (serviceClient bypasses RLS — works regardless of published_at)
@@ -181,9 +169,9 @@ export async function createPaymentIntent(
     return { error: "This drop is no longer accepting orders." };
   }
 
-  // Decrement inventory (needs service role to write)
+  // Decrement inventory
   for (const line of cartLines) {
-    const { data: dropItem } = await db
+    const { data: dropItem } = await serviceClient
       .from("drop_items")
       .select("available_qty")
       .eq("id", line.drop_item_id)
