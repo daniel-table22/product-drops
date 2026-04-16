@@ -73,7 +73,7 @@ export default async function StorefrontPage({
   const font    = fontFamilies[partner.font_style ?? "sans"];
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-white">
       <div
         data-theme-root
         className="max-w-[400px] mx-auto min-h-screen"
