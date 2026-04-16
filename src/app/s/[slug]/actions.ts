@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { twilioClient, TWILIO_PHONE } from "@/lib/twilio/client";
 
@@ -12,7 +11,7 @@ export async function subscribeToDrops(
 
   if (!phone) return { error: "Please enter a phone number." };
 
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const serviceClient = createServiceClient();
 
   const { data: partner } = await supabase

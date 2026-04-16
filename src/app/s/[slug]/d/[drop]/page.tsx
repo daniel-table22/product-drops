@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { DropStorefront } from "./drop-storefront";
 import type { Metadata } from "next";
 
@@ -9,7 +9,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string; drop: string }>;
 }): Promise<Metadata> {
   const { slug, drop: dropSlug } = await params;
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data: partner } = await supabase
     .from("partners")
@@ -49,7 +49,7 @@ export default async function DropDetailPage({
   params: Promise<{ slug: string; drop: string }>;
 }) {
   const { slug, drop: dropSlug } = await params;
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data: partner } = await supabase
     .from("partners")
