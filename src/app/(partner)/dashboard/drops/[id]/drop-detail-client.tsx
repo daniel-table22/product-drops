@@ -236,7 +236,15 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           <Button asChild variant="ghost" size="sm">
             <a href="/dashboard/drops">← Drops</a>
           </Button>
-          <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">{drop.name}</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-size-7 font-semibold text-neutral-12 tracking-tight">{drop.name}</h1>
+            <span className={[
+              "text-size-1 font-medium px-2 py-0.5 rounded-full",
+              drop.state === "scheduled" ? "bg-neutral-3 text-neutral-10" : "bg-accent-3 text-accent-11",
+            ].join(" ")}>
+              {drop.state === "scheduled" ? "Unpublished" : "Published"}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 mt-7">
           <DropStateBadge state={drop.state} />
@@ -571,7 +579,9 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                   setSeedPartialPending(false);
                   router.refresh();
                 }}>
-                {seedPartialPending ? "Adding…" : "✦ Autofill partial"}
+                {seedPartialPending ? (
+                  <><span className="w-3 h-3 rounded-full border-2 border-neutral-6 border-t-neutral-10 animate-spin inline-block mr-1.5" />Adding…</>
+                ) : "✦ Autofill partial"}
               </Button>
               <Button size="sm" variant="outline" disabled={seedPartialPending || seedFullPending}
                 onClick={async () => {
@@ -581,7 +591,9 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                   setSeedFullPending(false);
                   router.refresh();
                 }}>
-                {seedFullPending ? "Adding…" : "✦ Autofill all"}
+                {seedFullPending ? (
+                  <><span className="w-3 h-3 rounded-full border-2 border-neutral-6 border-t-neutral-10 animate-spin inline-block mr-1.5" />Adding…</>
+                ) : "✦ Autofill all"}
               </Button>
               {seedResult && (
                 <p className="text-size-1 text-neutral-10">{seedResult.created} order{seedResult.created !== 1 ? "s" : ""} added</p>
