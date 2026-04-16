@@ -370,7 +370,7 @@ function Step2({
   }
 
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full max-w-[1000px]">
       <StepLabel step="02" label="Brand research" />
       <h1 className="text-3xl font-semibold tracking-tight text-neutral-12 mb-1">
         The Mystery Part

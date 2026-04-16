@@ -101,7 +101,7 @@ If the website doesn't load or you can't find enough signal, make a reasonable i
 Business name: ${businessName}
 Website: ${normalizedUrl}
 
-Search their website, Instagram, any press coverage or reviews, and other public materials to understand how they write and communicate. Return only JSON.`,
+Search their website, LinkedIn, any press coverage, reviews, and other public materials to understand how they write and communicate. Return only JSON.`,
               },
             ],
           },
@@ -118,13 +118,16 @@ Search their website, Instagram, any press coverage or reviews, and other public
               toolInputs.set(event.index, "");
             }
 
-            // Search results arriving — emit each URL immediately
+            // Search results arriving — emit each URL immediately (skip FB/IG)
             if (block.type === "web_search_tool_result") {
               const content = block.content;
               if (Array.isArray(content)) {
                 for (const item of content) {
                   if (item.type === "web_search_result") {
-                    send({ type: "source", label: item.title, url: item.url });
+                    const u = item.url;
+                    if (!u.includes("facebook.com") && !u.includes("instagram.com")) {
+                      send({ type: "source", label: item.title, url: u });
+                    }
                   }
                 }
               }
