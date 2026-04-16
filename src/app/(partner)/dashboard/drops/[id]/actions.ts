@@ -194,15 +194,20 @@ export async function seedOrders(dropId: string, mode: "full" | "partial") {
   if (!rawItems?.length) return { error: "No items on this drop." };
 
   // Build pool of available units per item
+  // Partial mode fills items at staggered rates: item 1 → 50%, item 2 → 90%, item 3+ → 100%
+  const PARTIAL_RATES = [0.5, 0.9, 1.0];
   type Pool = { dropItemId: string; name: string; priceCents: number; remaining: number };
   const pool: Pool[] = rawItems
     .filter((i) => i.available_qty > 0)
-    .map((i) => ({
-      dropItemId: i.id,
-      name: (i.items as { name: string }).name,
-      priceCents: i.price_cents,
-      remaining: mode === "full" ? i.available_qty : Math.max(1, Math.floor(i.available_qty / 2)),
-    }));
+    .map((i, idx) => {
+      const rate = mode === "full" ? 1.0 : (PARTIAL_RATES[idx] ?? 1.0);
+      return {
+        dropItemId: i.id,
+        name: (i.items as { name: string }).name,
+        priceCents: i.price_cents,
+        remaining: Math.max(1, Math.floor(i.available_qty * rate)),
+      };
+    });
 
   if (!pool.length) return { error: "No available quantity left." };
 
