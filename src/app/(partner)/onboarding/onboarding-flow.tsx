@@ -695,13 +695,126 @@ function EmailPhoneContent({ email }: { email: PreviewData["email"] }) {
   );
 }
 
-function InstagramPhoneContent({ instagram }: { instagram: string }) {
+function InstagramPhoneContent({ instagram, businessName }: { instagram: string; businessName: string }) {
   return (
-    <div style={{ backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif" }}>
+    <div style={{ backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", color: "#000" }}>
+      {/* Status bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px 6px" }}>
+        <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: -0.3 }}>9:41</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="black">
+            <rect x="0" y="7" width="3" height="5" rx="0.5"/>
+            <rect x="4.5" y="5" width="3" height="7" rx="0.5"/>
+            <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="0.5" fillOpacity="0.35"/>
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <path d="M8 2.4C10.3 2.4 12.4 3.4 13.9 5L15.4 3.5C13.5 1.6 10.9 0.5 8 0.5C5.1 0.5 2.5 1.6 0.6 3.5L2.1 5C3.6 3.4 5.7 2.4 8 2.4Z" fill="black"/>
+            <path d="M8 5.3C9.5 5.3 10.9 5.9 11.9 6.9L13.4 5.4C12 4 10.1 3.2 8 3.2C5.9 3.2 4 4 2.6 5.4L4.1 6.9C5.1 5.9 6.5 5.3 8 5.3Z" fill="black"/>
+            <circle cx="8" cy="10" r="1.5" fill="black"/>
+          </svg>
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none">
+            <rect x="0.5" y="0.5" width="22" height="12" rx="3.5" stroke="black" strokeOpacity="0.35"/>
+            <rect x="2" y="2" width="18" height="9" rx="2" fill="black"/>
+            <path d="M24 4.5V8.5C25.1 8.2 26 7.4 26 6.5C26 5.6 25.1 4.8 24 4.5Z" fill="black" fillOpacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Instagram header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 8px", height: 44 }}>
+        <span style={{ fontSize: 24, fontWeight: 700, fontStyle: "italic", letterSpacing: -0.5 }}>Instagram</span>
+        <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Post header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+            background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
+            padding: 2,
+          }}>
+            <div style={{ width: "100%", height: "100%", borderRadius: "50%", backgroundColor: "#e0d6cc", border: "2px solid white" }} />
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 700 }}>{businessName}</span>
+        </div>
+        <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: 2 }}>···</span>
+      </div>
+
+      {/* Photo */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={PREVIEW_PHOTOS[3]} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
-      <div style={{ padding: "12px 16px" }}>
-        <p style={{ margin: 0, fontSize: 18, color: "#000", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{instagram}</p>
+
+      {/* Action icons */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px 4px" }}>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#ed4956">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </div>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+
+      {/* Caption */}
+      <div style={{ padding: "4px 12px 16px" }}>
+        <p style={{ margin: 0, fontSize: 14, color: "#000", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+          <span style={{ fontWeight: 700 }}>{businessName} </span>
+          {instagram}
+        </p>
+      </div>
+
+      {/* Bottom nav */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "10px 0 6px", borderTop: "0.5px solid #dbdbdb" }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+          <line x1="7" y1="2" x2="7" y2="22"/>
+          <line x1="17" y1="2" x2="17" y2="22"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <line x1="2" y1="7" x2="7" y2="7"/>
+          <line x1="2" y1="17" x2="7" y2="17"/>
+          <line x1="17" y1="17" x2="22" y2="17"/>
+          <line x1="17" y1="7" x2="22" y2="7"/>
+        </svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+        <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: "#e0d6cc", border: "1.5px solid #000" }} />
+      </div>
+
+      {/* Home indicator */}
+      <div style={{ height: 34, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 134, height: 5, borderRadius: 100, backgroundColor: "#000" }} />
       </div>
     </div>
   );
@@ -782,7 +895,7 @@ function Step3({
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Instagram</p>
           <PhoneBezel>
-            <InstagramPhoneContent instagram={preview.instagram} />
+            <InstagramPhoneContent instagram={preview.instagram} businessName={businessName} />
           </PhoneBezel>
         </div>
         <div className="flex flex-col items-center gap-2">
