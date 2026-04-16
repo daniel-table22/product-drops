@@ -226,6 +226,30 @@ function scoreCard(url: string, bizHost: string): number {
   return 0;
 }
 
+// Interleave own-domain cards with high-value cards so press/LinkedIn
+// appear early rather than being buried after all the own-domain pages.
+function interleaveCards(cards: SourceCard[], bizHost: string): SourceCard[] {
+  const own: SourceCard[] = [];
+  const high: SourceCard[] = [];
+  const other: SourceCard[] = [];
+
+  for (const c of cards) {
+    const s = scoreCard(c.url, bizHost);
+    if (s === 10) own.push(c);
+    else if (s > 0) high.push(c);
+    else other.push(c);
+  }
+
+  const result: SourceCard[] = [];
+  const len = Math.max(own.length, high.length);
+  for (let i = 0; i < len; i++) {
+    if (i < own.length) result.push(own[i]);
+    if (i < high.length) result.push(high[i]);
+  }
+  result.push(...other);
+  return result;
+}
+
 function OgCard({ card }: { card: SourceCard }) {
   const domain = getDomain(card.url);
   const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
@@ -428,12 +452,9 @@ function Step2({
       {/* Card grid — landscape cards, wider layout */}
       {cards.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-6">
-          {(() => {
-            const bizHost = getDomain(websiteUrl);
-            return [...cards]
-              .sort((a, b) => scoreCard(b.url, bizHost) - scoreCard(a.url, bizHost))
-              .map((card) => <OgCard key={card.url} card={card} />);
-          })()}
+          {interleaveCards(cards, getDomain(websiteUrl)).map((card) => (
+            <OgCard key={card.url} card={card} />
+          ))}
         </div>
       )}
 
