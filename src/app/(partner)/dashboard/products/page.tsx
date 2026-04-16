@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProductsClient } from "./products-client";
 import { PageHeader } from "@/components/page-header";
+import { SectionIntro } from "@/components/section-intro";
 
 export default async function ProductsPage() {
   const supabase = await createClient();
@@ -27,7 +28,14 @@ export default async function ProductsPage() {
   return (
     <div className="px-8 py-10 space-y-6">
       <PageHeader title="Products" size="large" />
-      <ProductsClient items={items ?? []} userId={user.id} />
+      <SectionIntro
+        storageKey="intro_dismissed_items"
+        illustration="/illustrations/items-intro.png"
+        title="Build your menu"
+        description="Add the items you sell — names, photos, and descriptions. You'll pick from these when building a drop."
+      >
+        <ProductsClient items={items ?? []} userId={user.id} />
+      </SectionIntro>
     </div>
   );
 }

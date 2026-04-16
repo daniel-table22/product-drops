@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { rewriteMarketingCopy, type MarketingChannel } from "./actions";
+import { SectionIntro } from "@/components/section-intro";
 
 // ─── Channel guidance ────────────────────────────────────────────────────────
 
@@ -189,6 +190,13 @@ export function MarketingClient({
         </p>
       </div>
 
+      <SectionIntro
+        storageKey="intro_dismissed_marketing"
+        illustration="/illustrations/marketing-intro.png"
+        title="Grow your audience"
+        description="Ready-to-use copy for SMS, email, and Instagram to help you get more subscribers before your next drop."
+      >
+      <div className="space-y-10">
       {/* ── SMS ── */}
       <div className="space-y-4">
         <div>
@@ -247,6 +255,8 @@ export function MarketingClient({
           businessName={businessName}
         />
       </div>
+      </div>
+      </SectionIntro>
     </div>
   );
 }

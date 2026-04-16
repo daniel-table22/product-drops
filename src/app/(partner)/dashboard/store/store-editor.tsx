@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ImageUpload } from "@/components/image-upload";
 import { updateStore } from "./actions";
+import { SectionIntro } from "@/components/section-intro";
 import type { Tables } from "@/types/database";
 
 type Partner = Tables<"partners">;
@@ -63,6 +64,12 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
       <div className="w-[510px] shrink-0 space-y-8">
         <PageHeader title="Store" size="large" />
 
+        <SectionIntro
+          storageKey="intro_dismissed_storefront"
+          illustration="/illustrations/storefront-intro.png"
+          title="Make it yours"
+          description="Set up your public storefront — brand colors, logo, and intro copy so customers recognize you instantly."
+        >
         <form action={updateStore} className="space-y-6">
           <div className="space-y-4">
             <Separator />
@@ -210,6 +217,7 @@ export function StoreEditor({ partner, userId }: { partner: Partner; userId: str
             <Button type="submit" size="sm">Save changes</Button>
           </div>
         </form>
+        </SectionIntro>
       </div>
 
       {/* Right: phone preview */}
