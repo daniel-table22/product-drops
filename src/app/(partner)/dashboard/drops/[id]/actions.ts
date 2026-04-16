@@ -308,3 +308,41 @@ export async function removeDropItem(dropItemId: string, dropId: string) {
 
   revalidatePath(`/dashboard/drops/${dropId}`);
 }
+
+export async function updateDropItem(
+  dropItemId: string,
+  dropId: string,
+  priceCents: number,
+  newTotalQty: number
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Fetch current to compute purchased qty
+  const { data: di } = await supabase
+    .from("drop_items")
+    .select("total_qty, available_qty")
+    .eq("id", dropItemId)
+    .single();
+
+  if (!di) return { error: "Item not found." };
+
+  const purchased = di.total_qty - di.available_qty;
+  if (newTotalQty < purchased) {
+    return { error: `Qty can't go below ${purchased} (already purchased).` };
+  }
+
+  await supabase
+    .from("drop_items")
+    .update({
+      price_cents: priceCents,
+      total_qty: newTotalQty,
+      available_qty: newTotalQty - purchased,
+    })
+    .eq("id", dropItemId);
+
+  revalidatePath(`/dashboard/drops/${dropId}`);
+  return {};
+}

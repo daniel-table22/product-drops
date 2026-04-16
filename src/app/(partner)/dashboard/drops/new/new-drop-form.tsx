@@ -329,7 +329,7 @@ export function NewDropForm({ libraryItems, userId }: { libraryItems: LibraryIte
             pendingText="Saving…"
             className="rounded-none bg-accent-5 text-black hover:bg-accent-6 active:bg-accent-7"
           >
-            Save draft
+            Save
           </SubmitButton>
         </div>
       </form>
