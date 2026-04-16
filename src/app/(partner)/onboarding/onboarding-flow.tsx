@@ -286,7 +286,7 @@ function Step2({
   email: string;
   businessName: string;
   websiteUrl: string;
-  onComplete: (tone: ToneData, preview: PreviewData) => void;
+  onComplete: (tone: ToneData, preview: PreviewData, logoUrl: string | null) => void;
   onSkip: () => void;
   onRetry: () => void;
 }) {
@@ -301,6 +301,16 @@ function Step2({
 
     async function run() {
       try {
+        // Fire logo fetch in parallel — don't await, we'll use the result at the end
+        const logoPromise = fetch("/api/onboarding/logo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ websiteUrl }),
+        })
+          .then((r) => r.ok ? r.json() : {})
+          .then((d: { logoUrl?: string; logoDataUrl?: string }) => d.logoDataUrl ?? d.logoUrl ?? null)
+          .catch(() => null);
+
         const res = await fetch("/api/onboarding/research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -354,10 +364,13 @@ function Step2({
 
         if (!resolvedTone) throw new Error("No tone data received");
 
-        const previewResult = await generatePreview(resolvedTone, businessName);
+        const [previewResult, resolvedLogoUrl] = await Promise.all([
+          generatePreview(resolvedTone, businessName),
+          logoPromise,
+        ]);
         if ("error" in previewResult) throw new Error(previewResult.error);
 
-        onComplete(resolvedTone, previewResult.preview);
+        onComplete(resolvedTone, previewResult.preview, resolvedLogoUrl);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       }
@@ -530,10 +543,12 @@ function DropPhonePreview({
   drop,
   businessName,
   photos,
+  logoUrl: _logoUrl,
 }: {
   drop: PreviewData["drop"];
   businessName: string;
   photos: string[];
+  logoUrl: string | null;
 }) {
   return (
     <div style={{ position: "relative", width: BEZEL_W * SCALE, height: BEZEL_H * SCALE, flexShrink: 0, margin: "0 auto" }}>
@@ -656,18 +671,27 @@ function PhoneBezel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SmsPhoneContent({ sms, businessName, photos }: { sms: string; businessName: string; photos: string[] }) {
+function LogoAvatar({ logoUrl, businessName, size = 40 }: { logoUrl: string | null; businessName: string; size?: number }) {
+  if (logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={logoUrl} alt={businessName} style={{ width: size, height: size, borderRadius: "50%", objectFit: "contain", backgroundColor: "#f0efee", flexShrink: 0 }} />
+    );
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", backgroundColor: "#784545", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <span style={{ color: "white", fontSize: size * 0.4, fontWeight: 600 }}>{businessName.charAt(0).toUpperCase()}</span>
+    </div>
+  );
+}
+
+function SmsPhoneContent({ sms, businessName, photos, logoUrl }: { sms: string; businessName: string; photos: string[]; logoUrl: string | null }) {
   return (
     <div style={{ position: "relative", height: 843, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", overflow: "hidden" }}>
       {/* Navigation bar — status bar area + avatar + brand name */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 118, backgroundColor: "#f4f4f4", borderBottom: "1px solid #ddd" }}>
-        <div style={{
-          position: "absolute", left: "50%", top: 68,
-          transform: "translateX(-50%) translateY(-50%)",
-          width: 40, height: 40, borderRadius: "50%", backgroundColor: "#784545",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{ color: "white", fontSize: 16, fontWeight: 600 }}>{businessName.charAt(0).toUpperCase()}</span>
+        <div style={{ position: "absolute", left: "50%", top: 68, transform: "translateX(-50%) translateY(-50%)" }}>
+          <LogoAvatar logoUrl={logoUrl} businessName={businessName} size={40} />
         </div>
         <p style={{
           position: "absolute", left: "50%", top: 100,
@@ -703,7 +727,7 @@ function SmsPhoneContent({ sms, businessName, photos }: { sms: string; businessN
   );
 }
 
-function EmailPhoneContent({ email, businessName, photos }: { email: PreviewData["email"]; businessName: string; photos: string[] }) {
+function EmailPhoneContent({ email, businessName, photos, logoUrl }: { email: PreviewData["email"]; businessName: string; photos: string[]; logoUrl: string | null }) {
   return (
     <div style={{ position: "relative", height: 844, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* Status bar */}
@@ -738,9 +762,7 @@ function EmailPhoneContent({ email, businessName, photos }: { email: PreviewData
 
       {/* Sender row */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px 14px", flexShrink: 0 }}>
-        <div style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#784545", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ color: "white", fontSize: 16, fontWeight: 600 }}>{businessName.charAt(0).toUpperCase()}</span>
-        </div>
+        <LogoAvatar logoUrl={logoUrl} businessName={businessName} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#000", lineHeight: 1.3 }}>{businessName}</p>
           <p style={{ margin: 0, fontSize: 13, color: "#888", lineHeight: 1.3 }}>To: me</p>
@@ -768,7 +790,7 @@ function EmailPhoneContent({ email, businessName, photos }: { email: PreviewData
   );
 }
 
-function InstagramPhoneContent({ instagram, businessName, photos }: { instagram: string; businessName: string; photos: string[] }) {
+function InstagramPhoneContent({ instagram, businessName, photos, logoUrl }: { instagram: string; businessName: string; photos: string[]; logoUrl: string | null }) {
   return (
     <div style={{ position: "relative", height: 844, backgroundColor: "#fff", fontFamily: "system-ui,-apple-system,sans-serif", color: "#000", overflow: "hidden" }}>
       {/* Header bitmap — status bar + Instagram wordmark + icons */}
@@ -789,7 +811,12 @@ function InstagramPhoneContent({ instagram, businessName, photos }: { instagram:
               background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
               padding: 2,
             }}>
-              <div style={{ width: "100%", height: "100%", borderRadius: "50%", backgroundColor: "#e0d6cc", border: "2px solid white" }} />
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={businessName} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "contain", backgroundColor: "#fff", border: "2px solid white" }} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", borderRadius: "50%", backgroundColor: "#e0d6cc", border: "2px solid white" }} />
+              )}
             </div>
             <span style={{ fontSize: 13, fontWeight: 700 }}>{businessName}</span>
           </div>
@@ -833,11 +860,13 @@ function Step3({
   preview,
   businessName,
   email,
+  logoUrl,
 }: {
   tone: ToneData;
   preview: PreviewData;
   businessName: string;
   email: string;
+  logoUrl: string | null;
 }) {
   const [done, setDone] = useState(false);
 
@@ -894,24 +923,24 @@ function Step3({
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-6 mb-10 justify-items-center">
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Drop page</p>
-          <DropPhonePreview drop={preview.drop} businessName={businessName} photos={photos} />
+          <DropPhonePreview drop={preview.drop} businessName={businessName} photos={photos} logoUrl={logoUrl} />
         </div>
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">SMS</p>
           <PhoneBezel>
-            <SmsPhoneContent sms={preview.sms} businessName={businessName} photos={photos} />
+            <SmsPhoneContent sms={preview.sms} businessName={businessName} photos={photos} logoUrl={logoUrl} />
           </PhoneBezel>
         </div>
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Instagram</p>
           <PhoneBezel>
-            <InstagramPhoneContent instagram={preview.instagram} businessName={businessName} photos={photos} />
+            <InstagramPhoneContent instagram={preview.instagram} businessName={businessName} photos={photos} logoUrl={logoUrl} />
           </PhoneBezel>
         </div>
         <div className="flex flex-col items-center gap-2">
           <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest">Email</p>
           <PhoneBezel>
-            <EmailPhoneContent email={preview.email} businessName={businessName} photos={photos} />
+            <EmailPhoneContent email={preview.email} businessName={businessName} photos={photos} logoUrl={logoUrl} />
           </PhoneBezel>
         </div>
       </div>
@@ -938,6 +967,7 @@ export function OnboardingFlow() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [tone, setTone] = useState<ToneData | null>(null);
   const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [step2Key, setStep2Key] = useState(0);
 
   function handleStep1Complete(
@@ -959,9 +989,10 @@ export function OnboardingFlow() {
     }
   }
 
-  function handleResearchComplete(t: ToneData, p: PreviewData) {
+  function handleResearchComplete(t: ToneData, p: PreviewData, logo: string | null) {
     setTone(t);
     setPreview(p);
+    setLogoUrl(logo);
     setStep(3);
   }
 
@@ -986,6 +1017,7 @@ export function OnboardingFlow() {
           preview={preview}
           businessName={businessName}
           email={email}
+          logoUrl={logoUrl}
         />
       )}
       {/* No website or research skipped — just show check email */}
