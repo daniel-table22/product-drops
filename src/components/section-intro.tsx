@@ -65,7 +65,7 @@ export function SectionIntro({
             className="w-full flex flex-col items-start"
             style={{ paddingLeft: 32, paddingRight: 64, gap: 10 }}
           >
-            <div>
+            <div style={{ width: 420 }}>
               <p className="text-size-3 font-medium text-neutral-12 leading-6">{title}</p>
               <p className="text-size-3 text-neutral-10 leading-6">{description}</p>
             </div>
