@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { twilioClient, TWILIO_PHONE } from "@/lib/twilio/client";
+import { sendSms } from "@/lib/sms";
 import { anthropic } from "@/lib/anthropic/client";
 import type { Database } from "@/types/database";
 
@@ -85,11 +85,7 @@ export async function publishDrop(dropId: string) {
 
     const results = await Promise.allSettled(
       (subscribers ?? []).map((s) =>
-        twilioClient.messages.create({
-          to: s.phone,
-          from: TWILIO_PHONE,
-          body: `${partner.business_name} drop is open: ${drop.name}. Order now → ${dropUrl}`,
-        })
+        sendSms(s.phone, `${partner.business_name} drop is open: ${drop.name}. Order now → ${dropUrl}`)
       )
     );
     const sent = results.filter((r) => r.status === "fulfilled").length;
@@ -125,11 +121,7 @@ export async function sendBlast(dropId: string, message: string) {
 
   const results = await Promise.allSettled(
     subscribers.map((s) =>
-      twilioClient.messages.create({
-        to: s.phone,
-        from: TWILIO_PHONE,
-        body: message,
-      })
+      sendSms(s.phone, message)
     )
   );
 

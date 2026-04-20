@@ -1,7 +1,7 @@
 "use server";
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { twilioClient, TWILIO_PHONE } from "@/lib/twilio/client";
+import { sendSms } from "@/lib/sms";
 
 export async function subscribeToDrops(
   formData: FormData
@@ -31,11 +31,7 @@ export async function subscribeToDrops(
 
   // Send double opt-in SMS
   try {
-    await twilioClient.messages.create({
-      to: phone,
-      from: TWILIO_PHONE,
-      body: `Reply YES to get drop alerts from ${partner.business_name}. Reply STOP to unsubscribe.`,
-    });
+    await sendSms(phone, `Reply YES to get drop alerts from ${partner.business_name}. Reply STOP to unsubscribe.`);
   } catch {
     return { error: "Could not send confirmation SMS. Check your number and try again." };
   }
