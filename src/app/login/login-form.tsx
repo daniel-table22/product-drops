@@ -30,7 +30,7 @@ export default function LoginForm({ next }: { next?: string }) {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      setError("Something went wrong — try again or email daniel.nacamuli@table22.com.");
     } else {
       setSent(true);
     }

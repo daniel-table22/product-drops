@@ -6,32 +6,39 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next");
 
-  if (code) {
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login?error=no-code`);
+  }
+
+  try {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      // Check if this user already has a partner profile
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: partner } = await supabase
-          .from("partners")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
-
-        // New user — send to onboarding
-        if (!partner) {
-          return NextResponse.redirect(`${origin}/onboarding`);
-        }
-      }
-
-      return NextResponse.redirect(`${origin}${next ?? "/dashboard"}`);
+    if (error) {
+      const errorCode = error.message.toLowerCase().includes("expired")
+        ? "expired"
+        : "invalid";
+      return NextResponse.redirect(`${origin}/login?error=${errorCode}`);
     }
-  }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: partner } = await supabase
+        .from("partners")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!partner) {
+        return NextResponse.redirect(`${origin}/onboarding`);
+      }
+    }
+
+    return NextResponse.redirect(`${origin}${next ?? "/dashboard"}`);
+  } catch {
+    return NextResponse.redirect(`${origin}/login?error=auth`);
+  }
 }

@@ -35,6 +35,46 @@ function extractJson(text: string): string {
   return stripped;
 }
 
+export async function createPartnerRow(
+  data: {
+    email: string;
+    businessName: string;
+    slug: string;
+    pickupAddress: string;
+  },
+  userId: string
+): Promise<{ partnerId: string } | { error: string; field?: "slug" }> {
+  const serviceClient = createServiceClient();
+
+  const { data: row, error: partnerError } = await serviceClient
+    .from("partners")
+    .insert({
+      user_id: userId,
+      email: data.email,
+      business_name: data.businessName,
+      slug: data.slug,
+      pickup_address: data.pickupAddress,
+      onboarding_state: "profile_complete",
+    })
+    .select("id")
+    .single();
+
+  if (partnerError) {
+    if (partnerError.code === "23505") {
+      return { error: "That URL is already taken. Try a different one.", field: "slug" };
+    }
+    return { error: partnerError.message };
+  }
+
+  try {
+    await seedPartnerDefaults(row.id, serviceClient);
+  } catch {
+    // ignore
+  }
+
+  return { partnerId: row.id };
+}
+
 export async function createPartner(
   data: {
     email: string;
