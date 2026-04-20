@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { sendSms } from "@/lib/sms";
+import { sendSms, isSmsTestMode } from "@/lib/sms";
 import { anthropic } from "@/lib/anthropic/client";
 import type { Database } from "@/types/database";
 
@@ -24,6 +24,24 @@ export async function updateOrderState(orderId: string, dropId: string, newState
     .from("orders")
     .update({ state: newState, ...extra })
     .eq("id", orderId);
+
+  if (newState === "ready") {
+    const serviceClient = createServiceClient();
+    const { data: orderRow } = await serviceClient
+      .from("orders")
+      .select("customer_phone, drops!inner(partners!inner(business_name))")
+      .eq("id", orderId)
+      .single();
+
+    const phone = orderRow?.customer_phone;
+    const businessName = (
+      orderRow?.drops as { partners: { business_name: string } } | null
+    )?.partners?.business_name;
+
+    if (phone && businessName) {
+      await sendSms(phone, `Your order from ${businessName} is ready for pickup!`).catch(() => {});
+    }
+  }
 
   revalidatePath(`/dashboard/drops/${dropId}`);
 }
@@ -83,9 +101,14 @@ export async function publishDrop(dropId: string) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const dropUrl = `${appUrl}/s/${partner.slug}/d/${drop.slug}`;
 
+    const testMode = await isSmsTestMode();
     const results = await Promise.allSettled(
       (subscribers ?? []).map((s) =>
-        sendSms(s.phone, `${partner.business_name} drop is open: ${drop.name}. Order now → ${dropUrl}`)
+        sendSms(
+          s.phone,
+          `${partner.business_name} drop is open: ${drop.name}. Order now → ${dropUrl}`,
+          { testMode }
+        )
       )
     );
     const sent = results.filter((r) => r.status === "fulfilled").length;
@@ -119,9 +142,10 @@ export async function sendBlast(dropId: string, message: string) {
 
   if (!subscribers?.length) return { sent: 0 };
 
+  const testMode = await isSmsTestMode();
   const results = await Promise.allSettled(
     subscribers.map((s) =>
-      sendSms(s.phone, message)
+      sendSms(s.phone, message, { testMode })
     )
   );
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
 import { createServiceClient } from "@/lib/supabase/service";
+import { sendSms } from "@/lib/sms";
 import type Stripe from "stripe";
 
 type LineItem = {
@@ -38,6 +39,16 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function getPartnerNameForDrop(dropId: string): Promise<string | null> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from("drops")
+    .select("partners!inner(business_name)")
+    .eq("id", dropId)
+    .single();
+  return (data?.partners as { business_name: string } | null)?.business_name ?? null;
 }
 
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
@@ -100,7 +111,16 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   // Delete pending order
   await supabase.from("pending_orders").delete().eq("id", pending_order_id);
 
-  // TODO: Send order confirmation email via Resend
+  // Send order confirmation SMS
+  if (customerPhone) {
+    const businessName = await getPartnerNameForDrop(pendingOrder.drop_id);
+    if (businessName) {
+      await sendSms(
+        customerPhone,
+        `Your order from ${businessName} is confirmed. We'll text you when it's ready for pickup.`
+      ).catch(() => {});
+    }
+  }
 }
 
 async function handlePaymentIntentSucceeded(intent: Stripe.PaymentIntent) {
@@ -153,4 +173,15 @@ async function handlePaymentIntentSucceeded(intent: Stripe.PaymentIntent) {
   );
 
   await supabase.from("pending_orders").delete().eq("id", pending_order_id);
+
+  // Send order confirmation SMS
+  if (customer_phone) {
+    const businessName = await getPartnerNameForDrop(pendingOrder.drop_id);
+    if (businessName) {
+      await sendSms(
+        customer_phone,
+        `Your order from ${businessName} is confirmed. We'll text you when it's ready for pickup.`
+      ).catch(() => {});
+    }
+  }
 }
