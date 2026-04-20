@@ -35,6 +35,69 @@ function extractJson(text: string): string {
   return stripped;
 }
 
+export async function signUpPartner(data: {
+  email: string;
+  businessName: string;
+  slug: string;
+  pickupAddress: string;
+}): Promise<{ ok: true } | { error: string; field?: "email" | "slug" }> {
+  const serviceClient = createServiceClient();
+
+  const { data: authData, error: authError } = await serviceClient.auth.admin.createUser({
+    email: data.email,
+    email_confirm: false,
+  });
+
+  if (authError) {
+    const msg = authError.message.toLowerCase();
+    if (msg.includes("already") || msg.includes("exists")) {
+      return { error: "An account with this email already exists. Try signing in instead.", field: "email" };
+    }
+    return { error: authError.message };
+  }
+
+  const userId = authData.user.id;
+
+  const { data: row, error: partnerError } = await serviceClient
+    .from("partners")
+    .insert({
+      user_id: userId,
+      email: data.email,
+      business_name: data.businessName,
+      slug: data.slug,
+      pickup_address: data.pickupAddress,
+      onboarding_state: "profile_complete",
+    })
+    .select("id")
+    .single();
+
+  if (partnerError) {
+    await serviceClient.auth.admin.deleteUser(userId);
+    if (partnerError.code === "23505") {
+      return { error: "That URL is already taken. Try a different one.", field: "slug" };
+    }
+    return { error: partnerError.message };
+  }
+
+  try {
+    await seedPartnerDefaults(row.id, serviceClient);
+  } catch {
+    // ignore
+  }
+
+  // Send magic link — clicking it is the email verification gate before dashboard
+  const supabase = await createClient();
+  await supabase.auth.signInWithOtp({
+    email: data.email,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+    },
+  });
+
+  return { ok: true };
+}
+
 export async function createPartnerRow(
   data: {
     email: string;

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createPartnerRow } from "./actions";
+import { signUpPartner } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,27 +13,21 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-export default function OnboardingForm({
-  userId,
-  email,
-}: {
-  userId: string;
-  email: string;
-}) {
-  const router = useRouter();
+export default function OnboardingForm() {
+  const [email, setEmail] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [pickupAddress, setPickupAddress] = useState("");
   const [slugError, setSlugError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
 
   function handleBusinessNameChange(value: string) {
     setBusinessName(value);
-    if (!slugEdited) {
-      setSlug(slugify(value));
-    }
+    if (!slugEdited) setSlug(slugify(value));
   }
 
   function handleSlugChange(value: string) {
@@ -47,29 +40,60 @@ export default function OnboardingForm({
     e.preventDefault();
     setError(null);
     setSlugError(null);
+    setEmailError(null);
     setLoading(true);
 
-    const result = await createPartnerRow(
-      { email, businessName, slug, pickupAddress },
-      userId
-    );
+    const result = await signUpPartner({ email, businessName, slug, pickupAddress });
 
     setLoading(false);
 
     if ("error" in result) {
-      if (result.field === "slug") {
-        setSlugError(result.error);
-      } else {
-        setError(result.error);
-      }
+      if (result.field === "slug") setSlugError(result.error);
+      else if (result.field === "email") setEmailError(result.error);
+      else setError(result.error);
       return;
     }
 
-    router.push("/dashboard");
+    setDone(true);
+  }
+
+  if (done) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-4 border border-accent-6 bg-accent-2 p-4 text-size-2 text-accent-11">
+          Almost there — check your email and click the link we sent to <strong>{email}</strong> to access your dashboard.
+        </div>
+        <p className="text-center text-size-1 text-neutral-9">
+          Didn&apos;t get it? Check your spam folder or{" "}
+          <button
+            type="button"
+            onClick={() => setDone(false)}
+            className="underline hover:text-neutral-11"
+          >
+            try again
+          </button>
+          .
+        </p>
+      </div>
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-1.5">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+          placeholder="you@yourbusiness.com"
+        />
+        {emailError && <p className="text-size-1 text-error-11">{emailError}</p>}
+      </div>
+
       <div className="space-y-1.5">
         <Label htmlFor="businessName">Business name</Label>
         <Input
@@ -116,7 +140,7 @@ export default function OnboardingForm({
       {error && <p className="text-size-2 text-error-11">{error}</p>}
 
       <Button type="submit" disabled={loading || !slug} className="w-full">
-        {loading ? "Saving…" : "Continue"}
+        {loading ? "Setting up…" : "Get started"}
       </Button>
     </form>
   );
