@@ -40,6 +40,7 @@ export async function signUpPartner(data: {
   businessName: string;
   slug: string;
   pickupAddress: string;
+  websiteUrl: string;
 }): Promise<{ ok: true } | { error: string; field?: "email" | "slug" }> {
   const serviceClient = createServiceClient();
 
@@ -66,6 +67,7 @@ export async function signUpPartner(data: {
       business_name: data.businessName,
       slug: data.slug,
       pickup_address: data.pickupAddress,
+      website_url: data.websiteUrl,
       onboarding_state: "profile_complete",
     })
     .select("id")

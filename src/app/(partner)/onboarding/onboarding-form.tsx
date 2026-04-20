@@ -18,6 +18,7 @@ export default function OnboardingForm() {
   const [businessName, setBusinessName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [pickupAddress, setPickupAddress] = useState("");
   const [slugError, setSlugError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export default function OnboardingForm() {
     setEmailError(null);
     setLoading(true);
 
-    const result = await signUpPartner({ email, businessName, slug, pickupAddress });
+    const result = await signUpPartner({ email, businessName, slug, pickupAddress, websiteUrl });
 
     setLoading(false);
 
@@ -108,8 +109,8 @@ export default function OnboardingForm() {
 
       <div className="space-y-1.5">
         <Label htmlFor="slug">Store URL</Label>
-        <div className="flex items-center rounded-3 border border-neutral-7 bg-surface transition-colors focus-within:border-accent-8 focus-within:ring-1 focus-within:ring-accent-8">
-          <span className="select-none pl-3 text-size-2 text-neutral-9 whitespace-nowrap">
+        <div className="flex items-stretch rounded-3 border border-neutral-7 bg-surface overflow-hidden transition-colors focus-within:border-accent-8 focus-within:ring-1 focus-within:ring-accent-8">
+          <span className="select-none flex items-center px-3 text-size-2 text-neutral-9 whitespace-nowrap bg-neutral-2 border-r border-neutral-7">
             productdrops.com/s/
           </span>
           <input
@@ -118,11 +119,23 @@ export default function OnboardingForm() {
             required
             value={slug}
             onChange={(e) => handleSlugChange(e.target.value)}
-            className="flex-1 bg-transparent py-2 pr-3 text-size-2 text-neutral-12 outline-none"
+            className="flex-1 bg-transparent py-2 px-3 text-size-2 text-neutral-12 outline-none"
             placeholder="tartine-bakery"
           />
         </div>
         {slugError && <p className="text-size-1 text-error-11">{slugError}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="websiteUrl">Website</Label>
+        <Input
+          id="websiteUrl"
+          type="url"
+          required
+          value={websiteUrl}
+          onChange={(e) => setWebsiteUrl(e.target.value)}
+          placeholder="https://tartinebakery.com"
+        />
       </div>
 
       <div className="space-y-1.5">
