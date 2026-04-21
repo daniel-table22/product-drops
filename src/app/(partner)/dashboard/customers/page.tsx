@@ -156,13 +156,17 @@ export default async function AudiencePage({
       <div className="rounded-4 border border-neutral-6 bg-neutral-2 p-4 max-w-3xl">
         <div className="flex gap-3">
           <Info size={16} className="shrink-0 mt-0.5 text-neutral-10" />
-          <div className="space-y-2 text-size-2 text-neutral-11">
-            <p className="font-medium text-neutral-12">Two types of people live here:</p>
-            <ul className="space-y-1">
-              <li><span className="font-medium text-neutral-12">Subscribers</span> — they opted in on your storefront and will get SMS when you publish drops.</li>
-              <li><span className="font-medium text-neutral-12">Contacts</span> — you imported them from a CSV (e.g. your Table22 subscriber list). They haven't opted in yet — they only become subscribers if they sign up on your storefront.</li>
-            </ul>
-            <p className="text-neutral-10">When someone places an order, we match their email back to your CSV — so you can see which of your subscribers originally came from your customer list.</p>
+          <div className="space-y-3 text-size-2 text-neutral-11">
+            <div className="space-y-2">
+              <p className="font-medium text-neutral-12">Three types of people live here:</p>
+              <ul className="space-y-1.5">
+                <li><span className="font-medium text-neutral-12">Subscribers</span> — opted in on your storefront. They get SMS when you publish a drop.</li>
+                <li><span className="font-medium text-neutral-12">Contacts</span> — imported from a CSV (e.g. your Table22 subscriber list). They haven't opted in to SMS yet — they only become subscribers if they sign up on your storefront after you market to them.</li>
+                <li><span className="font-medium text-neutral-12">Buyers</span> — placed an order without subscribing (e.g. via Apple Pay). We can't SMS them, but they're a real customer — we'll email them later inviting them to subscribe for future drops.</li>
+              </ul>
+            </div>
+            <p><span className="font-medium text-neutral-12">Why we allow non-subscribers to buy:</span> legally, SMS marketing consent can't be a condition of purchase (TCPA rule). So anyone can check out — that's the safety net. Buyers land here automatically so you can re-engage them by email.</p>
+            <p className="text-neutral-10">When a subscriber places an order, we also match their email against your CSV imports and tag them <span className="italic">From CSV</span> — so you can see who came through your customer-list funnel.</p>
           </div>
         </div>
       </div>
