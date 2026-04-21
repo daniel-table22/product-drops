@@ -2,10 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { PageHeader } from "@/components/page-header";
 import { DropStateBadge } from "@/components/state-badge";
 import { DeleteDropButton } from "./delete-drop-button";
 import { NewDropButton } from "./new-drop-button";
+import { PrefilledDropButton } from "./prefilled-drop-button";
 import { DropRow, DropActionsCell } from "./drop-row";
 import { SectionIntro } from "@/components/section-intro";
 
@@ -14,6 +16,8 @@ export default async function DropsPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const isAdmin = user.email?.endsWith("@table22.com") ?? false;
 
   const { data: partner } = await supabase
     .from("partners")
@@ -35,6 +39,26 @@ export default async function DropsPage() {
     .eq("partner_id", partner.id)
     .eq("opted_in", true);
 
+  // Admin/testing gating data (only fetched for @table22.com users)
+  const [
+    { data: settings },
+    { count: itemCount },
+    { count: subscriberAnyCount },
+    { count: contactCount },
+  ] = isAdmin
+    ? await Promise.all([
+        createServiceClient().from("system_settings").select("ui_test_mode").single(),
+        supabase.from("items").select("id", { count: "exact", head: true }).eq("partner_id", partner.id).is("archived_at", null),
+        supabase.from("subscribers").select("id", { count: "exact", head: true }).eq("partner_id", partner.id),
+        supabase.from("partner_contacts").select("id", { count: "exact", head: true }).eq("partner_id", partner.id),
+      ])
+    : [{ data: null }, { count: 0 }, { count: 0 }, { count: 0 }];
+
+  const uiTestMode = (settings as { ui_test_mode?: boolean } | null)?.ui_test_mode ?? false;
+  const showPrefill = isAdmin && uiTestMode;
+  const hasItems = (itemCount ?? 0) > 0;
+  const hasAudience = (subscriberAnyCount ?? 0) + (contactCount ?? 0) > 0;
+
   // Order counts per drop
   const dropIds = (drops ?? []).map((d) => d.id);
   const { data: orderCounts } = dropIds.length > 0
@@ -52,7 +76,16 @@ export default async function DropsPage() {
 
   return (
     <div className="px-8 py-10 space-y-6">
-      <PageHeader title="Drops" size="large" actions={<NewDropButton />} />
+      <PageHeader
+        title="Drops"
+        size="large"
+        actions={
+          <div className="flex items-center gap-2">
+            {showPrefill && <PrefilledDropButton hasItems={hasItems} hasAudience={hasAudience} />}
+            <NewDropButton />
+          </div>
+        }
+      />
 
       <SectionIntro
         storageKey="intro_dismissed_drops"
