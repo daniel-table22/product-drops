@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { PageHeader } from "@/components/page-header";
 import { ImportCsvButton } from "./import-button";
+import { AutofillAudienceButton } from "./autofill-audience-button";
 
 type Filter = "all" | "subscribed" | "not_subscribed";
 
@@ -35,6 +37,8 @@ export default async function AudiencePage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const isAdmin = user.email?.endsWith("@table22.com") ?? false;
+
   const { data: partner } = await supabase
     .from("partners")
     .select("id")
@@ -42,6 +46,12 @@ export default async function AudiencePage({
     .single();
 
   if (!partner) redirect("/onboarding");
+
+  const { data: settings } = isAdmin
+    ? await createServiceClient().from("system_settings").select("ui_test_mode").single()
+    : { data: null };
+  const uiTestMode = (settings as { ui_test_mode?: boolean } | null)?.ui_test_mode ?? false;
+  const showAutofill = isAdmin && uiTestMode;
 
   const [
     { data: subscribers },
@@ -146,7 +156,16 @@ export default async function AudiencePage({
   return (
     <div className="px-8 py-10 space-y-6">
       <div>
-        <PageHeader title="Audience" size="large" actions={<ImportCsvButton />} />
+        <PageHeader
+          title="Audience"
+          size="large"
+          actions={
+            <div className="flex items-center gap-3">
+              {showAutofill && <AutofillAudienceButton />}
+              <ImportCsvButton />
+            </div>
+          }
+        />
         <p className="mt-1 text-size-2 text-neutral-10">
           Contacts from your CRM and people who signed up on your storefront
         </p>

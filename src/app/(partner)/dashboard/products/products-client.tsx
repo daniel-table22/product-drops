@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Tables } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,31 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { createItem, updateItem, archiveItem } from "./actions";
+import { createItem, updateItem, archiveItem, seedItems } from "./actions";
 
 type Item = Tables<"items">;
 
-export function ProductsClient({ items, userId }: { items: Item[]; userId: string }) {
+const SEED_CATEGORIES = ["baker", "butcher", "alcohol", "wine", "cheese", "provisions", "restaurant"] as const;
+
+export function ProductsClient({ items, userId, isAdmin, uiTestMode }: { items: Item[]; userId: string; isAdmin: boolean; uiTestMode: boolean }) {
+  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
+  const [seedCategory, setSeedCategory] = useState<string>("baker");
+  const [seedPending, startSeed] = useTransition();
+  const [seedMsg, setSeedMsg] = useState<string | null>(null);
+  const showAutofill = isAdmin && uiTestMode;
+
+  function handleSeed() {
+    setSeedMsg(null);
+    startSeed(async () => {
+      const res = await seedItems(seedCategory);
+      if (res.error) setSeedMsg(res.error);
+      else if (res.skipped) setSeedMsg(res.reason ?? "Skipped.");
+      else setSeedMsg(`Added ${res.inserted} item${res.inserted === 1 ? "" : "s"}.`);
+      router.refresh();
+    });
+  }
 
   function openCreate() {
     setEditing(null);
@@ -49,7 +68,27 @@ export function ProductsClient({ items, userId }: { items: Item[]; userId: strin
     <>
       <div className="flex items-center justify-between">
         <p className="text-size-2 text-neutral-10">{items.length} product{items.length !== 1 ? "s" : ""}</p>
-        <Button size="sm" onClick={openCreate}>New product</Button>
+        <div className="flex items-center gap-2">
+          {showAutofill && (
+            <div className="flex items-center gap-1.5">
+              <select
+                value={seedCategory}
+                onChange={(e) => setSeedCategory(e.target.value)}
+                disabled={seedPending}
+                className="h-7 rounded-3 border border-neutral-6 bg-surface px-2 text-size-1 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
+              >
+                {SEED_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <Button size="sm" variant="outline" onClick={handleSeed} disabled={seedPending}>
+                {seedPending ? "Seeding…" : "🧪 Autofill"}
+              </Button>
+              {seedMsg && <span className="text-size-1 text-neutral-10 ml-1">{seedMsg}</span>}
+            </div>
+          )}
+          <Button size="sm" onClick={openCreate}>New product</Button>
+        </div>
       </div>
 
       {items.length === 0 ? (
