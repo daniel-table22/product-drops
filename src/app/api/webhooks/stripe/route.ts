@@ -41,14 +41,38 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function getPartnerNameForDrop(dropId: string): Promise<string | null> {
+async function getPartnerForDrop(dropId: string): Promise<{ id: string; business_name: string } | null> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from("drops")
-    .select("partners!inner(business_name)")
+    .select("partners!inner(id, business_name)")
     .eq("id", dropId)
     .single();
-  return (data?.partners as { business_name: string } | null)?.business_name ?? null;
+  return (data?.partners as { id: string; business_name: string } | null) ?? null;
+}
+
+// If the order's email matches a partner_contacts row, flag the subscriber
+// (if one exists for that phone) as from_csv. This is how we track which
+// drops subscribers originally came from an imported contact list.
+async function flagFromCsvIfMatches(
+  partnerId: string,
+  phone: string | null,
+  email: string | null,
+) {
+  if (!phone || !email) return;
+  const supabase = createServiceClient();
+  const { data: contact } = await supabase
+    .from("partner_contacts")
+    .select("id")
+    .eq("partner_id", partnerId)
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  if (!contact) return;
+  await supabase
+    .from("subscribers")
+    .update({ from_csv: true })
+    .eq("partner_id", partnerId)
+    .eq("phone", phone);
 }
 
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
@@ -124,15 +148,19 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   // Delete pending order
   await supabase.from("pending_orders").delete().eq("id", pending_order_id);
 
+  const partner = await getPartnerForDrop(pendingOrder.drop_id);
+
+  // Flag from_csv on the subscriber if their email matches a partner_contacts row
+  if (partner) {
+    await flagFromCsvIfMatches(partner.id, customerPhone, customerEmail).catch(() => {});
+  }
+
   // Send order confirmation SMS
-  if (customerPhone) {
-    const businessName = await getPartnerNameForDrop(pendingOrder.drop_id);
-    if (businessName) {
-      await sendSms(
-        customerPhone,
-        `Your order from ${businessName} is confirmed. We'll text you when it's ready for pickup.`
-      ).catch(() => {});
-    }
+  if (customerPhone && partner) {
+    await sendSms(
+      customerPhone,
+      `Your order from ${partner.business_name} is confirmed. We'll text you when it's ready for pickup.`
+    ).catch(() => {});
   }
 }
 
@@ -198,14 +226,18 @@ async function handlePaymentIntentSucceeded(intent: Stripe.PaymentIntent) {
 
   await supabase.from("pending_orders").delete().eq("id", pending_order_id);
 
+  const partner = await getPartnerForDrop(pendingOrder.drop_id);
+
+  // Flag from_csv on the subscriber if their email matches a partner_contacts row
+  if (partner) {
+    await flagFromCsvIfMatches(partner.id, customer_phone || null, customer_email || null).catch(() => {});
+  }
+
   // Send order confirmation SMS
-  if (customer_phone) {
-    const businessName = await getPartnerNameForDrop(pendingOrder.drop_id);
-    if (businessName) {
-      await sendSms(
-        customer_phone,
-        `Your order from ${businessName} is confirmed. We'll text you when it's ready for pickup.`
-      ).catch(() => {});
-    }
+  if (customer_phone && partner) {
+    await sendSms(
+      customer_phone,
+      `Your order from ${partner.business_name} is confirmed. We'll text you when it's ready for pickup.`
+    ).catch(() => {});
   }
 }

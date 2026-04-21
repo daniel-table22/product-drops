@@ -4,11 +4,9 @@ import { useRef, useState, useTransition } from "react";
 import { importContacts } from "./actions";
 
 type ParsedContact = {
-  phone: string;
-  opted_in: boolean;
   name?: string;
   email?: string;
-  created_at?: string;
+  phone?: string;
 };
 
 function parseCsv(text: string): ParsedContact[] {
@@ -16,27 +14,23 @@ function parseCsv(text: string): ParsedContact[] {
   if (lines.length < 2) return [];
 
   const headers = lines[0].toLowerCase().split(",").map((h) => h.trim().replace(/"/g, ""));
-  const phoneIdx = headers.indexOf("phone");
-  if (phoneIdx === -1) return [];
-
   const nameIdx = headers.indexOf("name");
   const emailIdx = headers.indexOf("email");
-  const subscribedIdx = headers.indexOf("subscribed");
-  const createdAtIdx = headers.indexOf("created_at");
+  const phoneIdx = headers.indexOf("phone");
+
+  if (emailIdx === -1 && phoneIdx === -1) return [];
 
   const rows: ParsedContact[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(",").map((c) => c.trim().replace(/"/g, ""));
-    const phone = cols[phoneIdx]?.trim();
-    if (!phone) continue;
+    const email = emailIdx !== -1 ? cols[emailIdx] : undefined;
+    const phone = phoneIdx !== -1 ? cols[phoneIdx] : undefined;
+    if (!email && !phone) continue;
 
-    const sub = subscribedIdx !== -1 ? cols[subscribedIdx]?.toLowerCase() : "no";
     rows.push({
-      phone,
-      opted_in: sub === "yes" || sub === "true" || sub === "1",
       ...(nameIdx !== -1 && cols[nameIdx] ? { name: cols[nameIdx] } : {}),
-      ...(emailIdx !== -1 && cols[emailIdx] ? { email: cols[emailIdx] } : {}),
-      ...(createdAtIdx !== -1 && cols[createdAtIdx] ? { created_at: cols[createdAtIdx] } : {}),
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
     });
   }
   return rows;
@@ -60,7 +54,7 @@ export function ImportCsvButton() {
       const contacts = parseCsv(text);
 
       if (contacts.length === 0) {
-        setError('CSV must have a "phone" column and at least one row.');
+        setError('CSV must have an "email" or "phone" column and at least one row.');
         if (inputRef.current) inputRef.current.value = "";
         return;
       }

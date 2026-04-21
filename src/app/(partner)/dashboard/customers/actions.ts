@@ -13,11 +13,9 @@ function normalizePhone(raw: string): string | null {
 }
 
 type ContactInput = {
-  phone: string;
-  opted_in: boolean;
   name?: string;
   email?: string;
-  created_at?: string;
+  phone?: string;
 };
 
 export async function importContacts(
@@ -38,47 +36,50 @@ export async function importContacts(
 
   if (!partner) redirect("/onboarding");
 
-  // Normalize phones and drop invalid ones
+  // Normalize phones (optional) and require at least email or phone per row
   const normalized = contacts
-    .map((c) => ({ ...c, phone: normalizePhone(c.phone) }))
-    .filter((c): c is ContactInput & { phone: string } => c.phone !== null);
+    .map((c) => ({
+      name: c.name?.trim() || null,
+      email: c.email?.trim().toLowerCase() || null,
+      phone: c.phone ? normalizePhone(c.phone) : null,
+    }))
+    .filter((c) => c.email || c.phone);
 
   const skippedInvalid = contacts.length - normalized.length;
 
   if (normalized.length === 0) {
-    return { imported: 0, skipped: contacts.length, error: "No valid phone numbers found." };
+    return { imported: 0, skipped: contacts.length, error: "Each row must have an email or a phone." };
   }
 
-  // Find which phones already exist so we don't overwrite organic subscribers
-  const phones = normalized.map((c) => c.phone);
-  const { data: existing } = await supabase
-    .from("subscribers")
-    .select("phone")
-    .eq("partner_id", partner.id)
-    .in("phone", phones);
+  // Dedupe against existing contacts (email match)
+  const emails = normalized.map((c) => c.email).filter(Boolean) as string[];
+  const { data: existing } = emails.length > 0
+    ? await supabase
+        .from("partner_contacts")
+        .select("email")
+        .eq("partner_id", partner.id)
+        .in("email", emails)
+    : { data: [] };
 
-  const existingSet = new Set((existing ?? []).map((s) => s.phone));
-  const newContacts = normalized.filter((c) => !existingSet.has(c.phone));
-  const skippedDupes = normalized.length - newContacts.length;
+  const existingEmails = new Set((existing ?? []).map((r) => r.email));
+  const newRows = normalized.filter((c) => !c.email || !existingEmails.has(c.email));
+  const skippedDupes = normalized.length - newRows.length;
 
-  if (newContacts.length === 0) {
+  if (newRows.length === 0) {
     return { imported: 0, skipped: skippedInvalid + skippedDupes };
   }
 
-  const rows = newContacts.map((c) => ({
+  const rows = newRows.map((c) => ({
     partner_id: partner.id,
+    email: c.email,
+    name: c.name,
     phone: c.phone,
-    opted_in: c.opted_in,
-    source: "crm_csv",
-    ...(c.name ? { name: c.name } : {}),
-    ...(c.email ? { email: c.email } : {}),
-    ...(c.created_at ? { created_at: new Date(c.created_at).toISOString() } : {}),
   }));
 
-  const { error } = await supabase.from("subscribers").insert(rows);
+  const { error } = await supabase.from("partner_contacts").insert(rows);
 
   if (error) return { imported: 0, skipped: contacts.length, error: error.message };
 
   revalidatePath("/dashboard/customers");
-  return { imported: newContacts.length, skipped: skippedInvalid + skippedDupes };
+  return { imported: newRows.length, skipped: skippedInvalid + skippedDupes };
 }

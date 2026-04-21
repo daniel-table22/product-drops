@@ -372,6 +372,41 @@ export type Database = {
           },
         ]
       }
+      partner_contacts: {
+        Row: {
+          id: string
+          partner_id: string
+          email: string | null
+          name: string | null
+          phone: string | null
+          imported_at: string
+        }
+        Insert: {
+          id?: string
+          partner_id: string
+          email?: string | null
+          name?: string | null
+          phone?: string | null
+          imported_at?: string
+        }
+        Update: {
+          id?: string
+          partner_id?: string
+          email?: string | null
+          name?: string | null
+          phone?: string | null
+          imported_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscribers: {
         Row: {
           id: string
@@ -381,6 +416,7 @@ export type Database = {
           source: string
           name: string | null
           email: string | null
+          from_csv: boolean
           created_at: string
         }
         Insert: {
@@ -391,6 +427,7 @@ export type Database = {
           source?: string
           name?: string | null
           email?: string | null
+          from_csv?: boolean
           created_at?: string
         }
         Update: {
@@ -401,6 +438,7 @@ export type Database = {
           source?: string
           name?: string | null
           email?: string | null
+          from_csv?: boolean
           created_at?: string
         }
         Relationships: [

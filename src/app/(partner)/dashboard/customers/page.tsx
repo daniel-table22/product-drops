@@ -1,10 +1,23 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { ImportCsvButton } from "./import-button";
 
 type Filter = "all" | "subscribed" | "not_subscribed";
+
+type Row = {
+  key: string;
+  phone: string | null;
+  email: string | null;
+  name: string | null;
+  from_csv: boolean;
+  subscribed: boolean;       // true = in subscribers table with opted_in=true
+  is_contact_only: boolean;  // true = only in partner_contacts, not a subscriber
+  created_at: string;
+  dropCount: number;
+};
 
 export default async function AudiencePage({
   searchParams,
@@ -30,43 +43,41 @@ export default async function AudiencePage({
 
   if (!partner) redirect("/onboarding");
 
-  let query = supabase
-    .from("subscribers")
-    .select("id, phone, opted_in, source, name, email, created_at")
-    .eq("partner_id", partner.id)
-    .order("created_at", { ascending: false });
-
-  if (filter === "subscribed") query = query.eq("opted_in", true);
-  if (filter === "not_subscribed") query = query.eq("opted_in", false);
-
   const [
     { data: subscribers },
-    { count: subscribedCount },
-    { count: totalCount },
+    { data: contacts },
     { data: partnerDrops },
   ] = await Promise.all([
-    query,
     supabase
       .from("subscribers")
-      .select("id", { count: "exact", head: true })
+      .select("id, phone, opted_in, from_csv, source, name, email, created_at")
       .eq("partner_id", partner.id)
-      .eq("opted_in", true),
+      .order("created_at", { ascending: false }),
     supabase
-      .from("subscribers")
-      .select("id", { count: "exact", head: true })
-      .eq("partner_id", partner.id),
+      .from("partner_contacts")
+      .select("id, phone, email, name, imported_at")
+      .eq("partner_id", partner.id)
+      .order("imported_at", { ascending: false }),
     supabase
       .from("drops")
       .select("id")
       .eq("partner_id", partner.id),
   ]);
 
-  const all = subscribers ?? [];
+  const subs = subscribers ?? [];
+  const subscriberEmails = new Set(
+    subs.map((s) => s.email?.toLowerCase()).filter(Boolean) as string[]
+  );
 
-  // Count distinct drops ordered per phone
+  // Dedupe contacts: skip ones whose email is already on a subscriber
+  const contactsOnly = (contacts ?? []).filter(
+    (c) => !c.email || !subscriberEmails.has(c.email.toLowerCase())
+  );
+
+  // Count drops ordered per phone
   const dropIds = (partnerDrops ?? []).map((d) => d.id);
-  const phones = all.map((s) => s.phone);
-  let dropCountByPhone: Record<string, number> = {};
+  const phones = subs.map((s) => s.phone);
+  const dropCountByPhone: Record<string, number> = {};
 
   if (dropIds.length > 0 && phones.length > 0) {
     const { data: orders } = await supabase
@@ -87,10 +98,49 @@ export default async function AudiencePage({
     }
   }
 
-  const tabs: { label: string; value: Filter; count?: number }[] = [
-    { label: "All", value: "all", count: totalCount ?? 0 },
-    { label: "Subscribed", value: "subscribed", count: subscribedCount ?? 0 },
-    { label: "Not subscribed", value: "not_subscribed", count: (totalCount ?? 0) - (subscribedCount ?? 0) },
+  const subscriberRows: Row[] = subs.map((s) => ({
+    key: `sub-${s.id}`,
+    phone: s.phone,
+    email: s.email,
+    name: s.name,
+    // Treat legacy source='crm_csv' as from_csv for display
+    from_csv: s.from_csv || s.source === "crm_csv",
+    subscribed: s.opted_in,
+    is_contact_only: false,
+    created_at: s.created_at,
+    dropCount: dropCountByPhone[s.phone] ?? 0,
+  }));
+
+  const contactRows: Row[] = contactsOnly.map((c) => ({
+    key: `contact-${c.id}`,
+    phone: c.phone,
+    email: c.email,
+    name: c.name,
+    from_csv: true,
+    subscribed: false,
+    is_contact_only: true,
+    created_at: c.imported_at,
+    dropCount: 0,
+  }));
+
+  const allRows = [...subscriberRows, ...contactRows].sort(
+    (a, b) => b.created_at.localeCompare(a.created_at)
+  );
+
+  const subscribedCount = subscriberRows.filter((r) => r.subscribed).length;
+  const notSubscribedCount = subscriberRows.filter((r) => !r.subscribed).length + contactRows.length;
+  const totalCount = allRows.length;
+
+  const filtered = filter === "subscribed"
+    ? allRows.filter((r) => r.subscribed)
+    : filter === "not_subscribed"
+    ? allRows.filter((r) => !r.subscribed)
+    : allRows;
+
+  const tabs: { label: string; value: Filter; count: number }[] = [
+    { label: "All", value: "all", count: totalCount },
+    { label: "Subscribed", value: "subscribed", count: subscribedCount },
+    { label: "Not subscribed", value: "not_subscribed", count: notSubscribedCount },
   ];
 
   return (
@@ -100,6 +150,21 @@ export default async function AudiencePage({
         <p className="mt-1 text-size-2 text-neutral-10">
           Contacts from your CRM and people who signed up on your storefront
         </p>
+      </div>
+
+      {/* How-it-works callout */}
+      <div className="rounded-4 border border-neutral-6 bg-neutral-2 p-4 max-w-3xl">
+        <div className="flex gap-3">
+          <Info size={16} className="shrink-0 mt-0.5 text-neutral-10" />
+          <div className="space-y-2 text-size-2 text-neutral-11">
+            <p className="font-medium text-neutral-12">Two types of people live here:</p>
+            <ul className="space-y-1">
+              <li><span className="font-medium text-neutral-12">Subscribers</span> — they opted in on your storefront and will get SMS when you publish drops.</li>
+              <li><span className="font-medium text-neutral-12">Contacts</span> — you imported them from a CSV (e.g. your Table22 subscriber list). They haven't opted in yet — they only become subscribers if they sign up on your storefront.</li>
+            </ul>
+            <p className="text-neutral-10">When someone places an order, we match their email back to your CSV — so you can see which of your subscribers originally came from your customer list.</p>
+          </div>
+        </div>
       </div>
 
       {/* Toggle tabs */}
@@ -116,20 +181,18 @@ export default async function AudiencePage({
             ].join(" ")}
           >
             {tab.label}
-            {tab.count !== undefined && (
-              <span className="ml-1.5 text-size-1 text-neutral-10">{tab.count}</span>
-            )}
+            <span className="ml-1.5 text-size-1 text-neutral-10">{tab.count}</span>
           </Link>
         ))}
       </div>
 
-      {all.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="text-size-2 text-neutral-10">
           {filter === "all"
             ? "No contacts yet — import from your CRM or wait for people to sign up on your storefront."
             : filter === "subscribed"
             ? "No subscribed contacts yet."
-            : "Everyone is subscribed."}
+            : "No unsubscribed contacts."}
         </p>
       ) : (
         <div className="border border-neutral-6 rounded-4 overflow-hidden">
@@ -137,53 +200,60 @@ export default async function AudiencePage({
             <thead className="bg-neutral-2 border-b border-neutral-6">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Phone</th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-11">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-11">Name</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Source</th>
                 <th className="px-4 py-3 text-left font-medium text-neutral-11">Status</th>
                 <th className="px-4 py-3 text-right font-medium text-neutral-11">Drops</th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-11">Joined</th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-11">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-11">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-11">Added</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-6">
-              {all.map((s) => {
-                const dropCount = dropCountByPhone[s.phone] ?? 0;
-                return (
-                  <tr key={s.id} className="bg-surface hover:bg-neutral-2 transition-colors">
-                    <td className="px-4 py-3 text-neutral-12 font-medium font-mono">{s.phone}</td>
-                    <td className="px-4 py-3">
-                      {s.source !== "crm_csv" ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
-                          Organic
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-accent-3 text-accent-11">
-                          CRM import
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.opted_in ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
-                          Subscribed
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-neutral-3 text-neutral-10">
-                          Not subscribed
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-neutral-12">
-                      {dropCount > 0 ? dropCount : <span className="text-neutral-7">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-neutral-10">
-                      {new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </td>
-                    <td className="px-4 py-3 text-neutral-12">{s.name ?? <span className="text-neutral-7">—</span>}</td>
-                    <td className="px-4 py-3 text-neutral-10">{s.email ?? <span className="text-neutral-7">—</span>}</td>
-                  </tr>
-                );
-              })}
+              {filtered.map((r) => (
+                <tr key={r.key} className="bg-surface hover:bg-neutral-2 transition-colors">
+                  <td className="px-4 py-3 text-neutral-12 font-medium font-mono">
+                    {r.phone ?? <span className="text-neutral-7">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-10">
+                    {r.email ?? <span className="text-neutral-7">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-12">
+                    {r.name ?? <span className="text-neutral-7">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {r.from_csv ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-accent-3 text-accent-11">
+                        From CSV
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
+                        Organic
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {r.subscribed ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-[rgba(0,164,51,0.1)] text-[rgba(0,113,63,0.87)]">
+                        Subscribed
+                      </span>
+                    ) : r.is_contact_only ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-neutral-3 text-neutral-10">
+                        Contact only
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-size-1 font-medium bg-neutral-3 text-neutral-10">
+                        Not subscribed
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono text-neutral-12">
+                    {r.dropCount > 0 ? r.dropCount : <span className="text-neutral-7">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-10">
+                    {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
