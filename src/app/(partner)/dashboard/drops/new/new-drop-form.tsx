@@ -66,7 +66,7 @@ function addHours(d: Date, h: number): Date {
   return new Date(d.getTime() + h * 60 * 60 * 1000);
 }
 
-export function NewDropForm({ libraryItems, userId }: { libraryItems: LibraryItem[]; userId: string }) {
+export function NewDropForm({ libraryItems, userId, showAutofill }: { libraryItems: LibraryItem[]; userId: string; showAutofill: boolean }) {
   const [state, formAction, pending] = useActionState(createDrop, null);
 
   const [name, setName] = useState("");
@@ -142,9 +142,11 @@ export function NewDropForm({ libraryItems, userId }: { libraryItems: LibraryIte
           </Button>
           <PageHeader title="New drop" size="large" />
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={handleAutofill} disabled={autofilling}>
-          {autofilling ? "Filling…" : "✦ Autofill"}
-        </Button>
+        {showAutofill && (
+          <Button type="button" variant="outline" size="sm" onClick={handleAutofill} disabled={autofilling}>
+            {autofilling ? "Filling…" : "🧪 Autofill"}
+          </Button>
+        )}
       </div>
 
       <form action={formAction} className="space-y-6">

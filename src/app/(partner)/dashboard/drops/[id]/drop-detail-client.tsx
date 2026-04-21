@@ -588,7 +588,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 }}>
                 {seedPartialPending ? (
                   <><span className="w-3 h-3 rounded-full border-2 border-neutral-6 border-t-neutral-10 animate-spin inline-block mr-1.5" />Adding…</>
-                ) : "✦ Autofill partial"}
+                ) : "🧪 Autofill partial"}
               </Button>
               <Button size="sm" variant="outline" disabled={seedPartialPending || seedFullPending}
                 onClick={async () => {
@@ -600,7 +600,7 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                 }}>
                 {seedFullPending ? (
                   <><span className="w-3 h-3 rounded-full border-2 border-neutral-6 border-t-neutral-10 animate-spin inline-block mr-1.5" />Adding…</>
-                ) : "✦ Autofill all"}
+                ) : "🧪 Autofill all"}
               </Button>
               {seedResult && (
                 <p className="text-size-1 text-neutral-10">{seedResult.created} order{seedResult.created !== 1 ? "s" : ""} added</p>
