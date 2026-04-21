@@ -81,13 +81,6 @@ export function ImportCsvButton() {
       )}
       {error && <p className="text-size-1 text-error-11">{error}</p>}
       <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
-      <a
-        href="/sample-contacts.csv"
-        download
-        className="inline-flex items-center h-7 px-3 rounded-3 text-size-1 font-medium text-neutral-10 hover:text-neutral-12 transition-colors"
-      >
-        Sample CSV ↓
-      </a>
       <button
         onClick={() => { setStatus(null); setError(null); inputRef.current?.click(); }}
         disabled={isPending}
