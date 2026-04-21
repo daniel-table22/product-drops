@@ -188,6 +188,17 @@ export async function createPresetDrop(preset: DropPreset) {
     }
   }
 
+  // Seed orders into the new drop at preset-appropriate fill rates + states
+  const seedOpts = {
+    preload:       { targetFillRate: 0.5 },
+    orders_closed: { targetFillRate: 0.95 },
+    pickup_open:   { targetFillRate: 0.95, readyRatio: 0.3 },
+    pickup_closed: { targetFillRate: 0.95, pickedUpRatio: 1.0 },
+  }[preset];
+
+  const { seedOrdersForDrop } = await import("@/lib/seed-orders");
+  await seedOrdersForDrop(drop.id, seedOpts);
+
   revalidatePath("/dashboard/drops");
   redirect(`/dashboard/drops/${drop.id}`);
 }

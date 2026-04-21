@@ -178,129 +178,21 @@ export async function rewriteWithAI(
   return { text: content.text.trim() };
 }
 
-const FAKE_CUSTOMERS = [
-  { name: "Alex Chen",     email: "alex.chen@example.com",     phone: "+14155550101" },
-  { name: "Jordan Smith",  email: "jordan.smith@example.com",  phone: "+14155550102" },
-  { name: "Sam Rivera",    email: "sam.rivera@example.com",    phone: "+14155550103" },
-  { name: "Taylor Brown",  email: "taylor.brown@example.com",  phone: "+14155550104" },
-  { name: "Morgan Lee",    email: "morgan.lee@example.com",    phone: "+14155550105" },
-  { name: "Casey Davis",   email: "casey.davis@example.com",   phone: "+14155550106" },
-  { name: "Riley Wilson",  email: "riley.wilson@example.com",  phone: "+14155550107" },
-  { name: "Jamie Garcia",  email: "jamie.garcia@example.com",  phone: "+14155550108" },
-  { name: "Drew Martinez", email: "drew.martinez@example.com", phone: "+14155550109" },
-  { name: "Quinn Thompson",email: "quinn.t@example.com",       phone: "+14155550110" },
-  { name: "Avery Johnson", email: "avery.j@example.com",       phone: "+14155550111" },
-  { name: "Blake Anderson",email: "blake.a@example.com",       phone: "+14155550112" },
-];
-
-export async function seedOrders(dropId: string, mode: "full" | "partial") {
+export async function seedOrders(
+  dropId: string,
+  mode: "full" | "partial"
+): Promise<{ created?: number; error?: string }> {
   const authClient = await createClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) redirect("/login");
 
-  // Use service client for writes — order_items RLS only allows service role inserts
-  const supabase = createServiceClient();
-
-  // Fetch drop items with names
-  const { data: rawItems } = await supabase
-    .from("drop_items")
-    .select("id, price_cents, available_qty, items!inner(name)")
-    .eq("drop_id", dropId);
-
-  if (!rawItems?.length) return { error: "No items on this drop." };
-
-  // Build pool of available units per item
-  // Partial mode fills items at staggered rates: item 1 → 50%, item 2 → 90%, item 3+ → 100%
-  const PARTIAL_RATES = [0.5, 0.9, 1.0];
-  type Pool = {
-    dropItemId: string; name: string; priceCents: number;
-    remaining: number;   // units left to allocate in this seed run
-    dbAvailable: number; // tracks the real available_qty to write back
-  };
-  const pool: Pool[] = rawItems
-    .filter((i) => i.available_qty > 0)
-    .map((i, idx) => {
-      const rate = mode === "full" ? 1.0 : (PARTIAL_RATES[idx] ?? 1.0);
-      return {
-        dropItemId: i.id,
-        name: (i.items as { name: string }).name,
-        priceCents: i.price_cents,
-        remaining: Math.max(1, Math.floor(i.available_qty * rate)),
-        dbAvailable: i.available_qty,
-      };
-    });
-
-  if (!pool.length) return { error: "No available quantity left." };
-
-  // Shuffle customers so we get variety
-  const customers = [...FAKE_CUSTOMERS].sort(() => Math.random() - 0.5);
-  let custIdx = 0;
-  let ordersCreated = 0;
-
-  while (pool.some((p) => p.remaining > 0) && custIdx < customers.length) {
-    const available = pool.filter((p) => p.remaining > 0);
-    if (!available.length) break;
-
-    const customer = customers[custIdx % customers.length];
-    custIdx++;
-
-    // Pick 1–3 random items for this order
-    const shuffled = [...available].sort(() => Math.random() - 0.5);
-    const picked = shuffled.slice(0, Math.min(3, shuffled.length));
-
-    const lines: { dropItemId: string; name: string; priceCents: number; qty: number }[] = [];
-    for (const item of picked) {
-      const maxQty = Math.min(item.remaining, 3);
-      const qty = Math.floor(Math.random() * maxQty) + 1;
-      lines.push({ dropItemId: item.dropItemId, name: item.name, priceCents: item.priceCents, qty });
-      item.remaining -= qty;
-      item.dbAvailable -= qty;
-    }
-
-    const subtotalCents = lines.reduce((s, l) => s + l.priceCents * l.qty, 0);
-
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        drop_id: dropId,
-        customer_name: customer.name,
-        customer_email: customer.email,
-        customer_phone: customer.phone,
-        subtotal_cents: subtotalCents,
-        tip_cents: 0,
-        platform_fee_cents: 0,
-        total_cents: subtotalCents,
-        state: "paid",
-        stripe_payment_intent_id: `seed_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        paid_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (!order) continue;
-
-    await supabase.from("order_items").insert(
-      lines.map((l) => ({
-        order_id: order.id,
-        item_name: l.name,
-        price_cents: l.priceCents,
-        qty: l.qty,
-      }))
-    );
-
-    // Deduct from available_qty (pool.remaining already updated above)
-    for (const l of lines) {
-      await supabase
-        .from("drop_items")
-        .update({ available_qty: pool.find((p) => p.dropItemId === l.dropItemId)!.dbAvailable })
-        .eq("id", l.dropItemId);
-    }
-
-    ordersCreated++;
-  }
+  const { seedOrdersForDrop } = await import("@/lib/seed-orders");
+  const result = await seedOrdersForDrop(dropId, {
+    targetFillRate: mode === "full" ? 1.0 : 0.5,
+  });
 
   revalidatePath(`/dashboard/drops/${dropId}`);
-  return { created: ordersCreated };
+  return result;
 }
 
 export async function markOrderRefunded(orderId: string, dropId: string) {
