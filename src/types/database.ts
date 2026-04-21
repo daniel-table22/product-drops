@@ -59,6 +59,7 @@ export type Database = {
       drops: {
         Row: {
           announce_days_before: number | null
+          announced_at: string | null
           blast_count: number
           cancelled_at: string | null
           created_at: string
@@ -71,12 +72,14 @@ export type Database = {
           pickup_window_ends_at: string
           pickup_window_starts_at: string
           published_at: string | null
+          reminded_at: string | null
           reminder_days_before: number | null
           slug: string
           state: Database["public"]["Enums"]["drop_state"]
         }
         Insert: {
           announce_days_before?: number | null
+          announced_at?: string | null
           blast_count?: number
           cancelled_at?: string | null
           created_at?: string
@@ -89,12 +92,14 @@ export type Database = {
           pickup_window_ends_at: string
           pickup_window_starts_at: string
           published_at?: string | null
+          reminded_at?: string | null
           reminder_days_before?: number | null
           slug: string
           state?: Database["public"]["Enums"]["drop_state"]
         }
         Update: {
           announce_days_before?: number | null
+          announced_at?: string | null
           blast_count?: number
           cancelled_at?: string | null
           created_at?: string
@@ -107,6 +112,7 @@ export type Database = {
           pickup_window_ends_at?: string
           pickup_window_starts_at?: string
           published_at?: string | null
+          reminded_at?: string | null
           reminder_days_before?: number | null
           slug?: string
           state?: Database["public"]["Enums"]["drop_state"]
@@ -450,6 +456,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_settings: {
+        Row: {
+          id: boolean
+          sms_test_mode: boolean
+          ui_test_mode: boolean
+        }
+        Insert: {
+          id?: boolean
+          sms_test_mode?: boolean
+          ui_test_mode?: boolean
+        }
+        Update: {
+          id?: boolean
+          sms_test_mode?: boolean
+          ui_test_mode?: boolean
+        }
+        Relationships: []
       }
     }
     Views: {
