@@ -162,7 +162,7 @@ export default async function AudiencePage({
               <ul className="space-y-1.5">
                 <li><span className="font-medium text-neutral-12">Subscribers</span> — opted in on your storefront. They get SMS when you publish a drop.</li>
                 <li><span className="font-medium text-neutral-12">Contacts</span> — imported from a CSV (e.g. your Table22 subscriber list). They haven't opted in to SMS yet — they only become subscribers if they sign up on your storefront after you market to them.</li>
-                <li><span className="font-medium text-neutral-12">Buyers</span> — placed an order without subscribing (e.g. via Apple Pay). We can't SMS them, but they're a real customer — we'll email them later inviting them to subscribe for future drops.</li>
+                <li><span className="font-medium text-neutral-12">Buyers who aren't subscribers</span> — somehow landed on the page and placed an order. We need to get them to subsequently opt in to SMS marketing to tell them of future drops (e.g. follow-up email). This is an edge case, but needed to stay compliant.</li>
               </ul>
             </div>
             <p><span className="font-medium text-neutral-12">Why we allow non-subscribers to buy:</span> legally, SMS marketing consent can't be a condition of purchase (TCPA rule). So anyone can check out — that's the safety net. Buyers land here automatically so you can re-engage them by email.</p>
