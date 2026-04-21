@@ -78,6 +78,19 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const customerEmail = session.customer_details?.email ?? pendingOrder.customer_email;
   const customerPhone = session.customer_details?.phone ?? null;
 
+  // Idempotency: both checkout.session.completed and payment_intent.succeeded
+  // fire for the same card payment — skip if order already created.
+  const { data: existing } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("stripe_payment_intent_id", paymentIntentId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("pending_orders").delete().eq("id", pending_order_id);
+    return;
+  }
+
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .insert({
@@ -142,6 +155,17 @@ async function handlePaymentIntentSucceeded(intent: Stripe.PaymentIntent) {
   const lineItems = pendingOrder.line_items as LineItem[];
   const subtotalCents = lineItems.reduce((sum, l) => sum + l.price_cents * l.qty, 0);
   const platformFeeCents = Math.max(1, Math.round(subtotalCents * 0.001));
+
+  const { data: existing2 } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("stripe_payment_intent_id", intent.id)
+    .maybeSingle();
+
+  if (existing2) {
+    await supabase.from("pending_orders").delete().eq("id", pending_order_id);
+    return;
+  }
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")

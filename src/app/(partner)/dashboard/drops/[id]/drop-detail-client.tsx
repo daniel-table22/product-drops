@@ -3,7 +3,7 @@
 import React, { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  FileText, AlignLeft, CalendarRange, Package, MessageSquare, Mail, Phone,
+  FileText, AlignLeft, CalendarRange, Package, MessageSquare, Mail, Phone, DollarSign,
 } from "lucide-react";
 import type { Tables, Database } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { updateOrderState, publishDrop, addDropItem, removeDropItem, updateDropItem, sendBlast, rewriteWithAI, seedOrders } from "./actions";
+import { updateOrderState, publishDrop, addDropItem, removeDropItem, updateDropItem, sendBlast, rewriteWithAI, seedOrders, markOrderRefunded, updateOrderNotes } from "./actions";
 import { updateDrop } from "../actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Separator } from "@/components/ui/separator";
@@ -136,6 +136,11 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
   const [blastResult, setBlastResult] = useState<{ sent: number } | null>(null);
   const [blastPending, setBlastPending] = useState(false);
   const [blastAIPending, setBlastAIPending] = useState(false);
+  const [refundDialogOrder, setRefundDialogOrder] = useState<Order | null>(null);
+  const [refundPending, setRefundPending] = useState(false);
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(orders.map((o) => [o.id, o.notes ?? ""]))
+  );
 
   // Overview read-only / edit toggle with fade-through
   const [isEditing, setIsEditing] = useState(false);
@@ -637,7 +642,11 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                         {order.customer_phone && (
                           <ContactChip icon={<Phone size={13} />} value={order.customer_phone} type="phone" />
                         )}
-                        <OrderStateBadge state={order.state} />
+                        {order.refunded_at ? (
+                          <span className="inline-flex items-center rounded-full bg-error-3 px-2 py-0.5 text-size-1 font-medium text-error-11">Refunded</span>
+                        ) : (
+                          <OrderStateBadge state={order.state} />
+                        )}
                       </div>
                     </div>
                     {/* Line items */}
@@ -649,17 +658,28 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                         </li>
                       ))}
                     </ul>
-                    {/* Status checkboxes + total */}
+                    {/* Notes */}
+                    <div className="px-4 py-2.5 border-t border-neutral-6">
+                      <textarea
+                        value={orderNotes[order.id] ?? ""}
+                        onChange={(e) => setOrderNotes((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                        onBlur={(e) => updateOrderNotes(order.id, drop.id, e.target.value)}
+                        rows={1}
+                        placeholder="Add a note (e.g. chargeback filed, customer contacted)…"
+                        className="w-full text-size-1 text-neutral-11 placeholder:text-neutral-8 bg-transparent resize-none focus:outline-none"
+                      />
+                    </div>
+                    {/* Status checkboxes + total + refund */}
                     <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-6 bg-neutral-1">
                       <div className="flex items-center gap-6">
                         <label className={[
                           "flex items-center gap-2 select-none",
-                          order.state === "paid" && !isPending ? "cursor-pointer" : "cursor-default opacity-60",
+                          order.state === "paid" && !isPending && !order.refunded_at ? "cursor-pointer" : "cursor-default opacity-60",
                         ].join(" ")}>
                           <input
                             type="checkbox"
                             checked={order.state === "ready" || order.state === "picked_up"}
-                            disabled={order.state !== "paid" || isPending}
+                            disabled={order.state !== "paid" || isPending || !!order.refunded_at}
                             onChange={() => handleOrderState(order.id, "ready")}
                             className="w-4 h-4 rounded accent-neutral-12 cursor-pointer disabled:cursor-default"
                           />
@@ -667,12 +687,12 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                         </label>
                         <label className={[
                           "flex items-center gap-2 select-none",
-                          order.state === "ready" && pickupOpen && !isPending ? "cursor-pointer" : "cursor-default opacity-60",
+                          order.state === "ready" && pickupOpen && !isPending && !order.refunded_at ? "cursor-pointer" : "cursor-default opacity-60",
                         ].join(" ")}>
                           <input
                             type="checkbox"
                             checked={order.state === "picked_up"}
-                            disabled={order.state !== "ready" || !pickupOpen || isPending}
+                            disabled={order.state !== "ready" || !pickupOpen || isPending || !!order.refunded_at}
                             onChange={() => handleOrderState(order.id, "picked_up")}
                             title={order.state === "ready" && !pickupOpen ? `Pickup opens ${new Date(drop.pickup_window_starts_at).toLocaleDateString()}` : undefined}
                             className="w-4 h-4 rounded accent-neutral-12 cursor-pointer disabled:cursor-default"
@@ -680,7 +700,18 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
                           <span className="text-size-2 text-neutral-11">Picked up</span>
                         </label>
                       </div>
-                      <span className="text-size-2 font-medium text-neutral-12">${(order.total_cents / 100).toFixed(2)}</span>
+                      <div className="flex items-center gap-3">
+                        {!order.refunded_at && (
+                          <button
+                            onClick={() => setRefundDialogOrder(order)}
+                            className="flex items-center gap-1 text-size-1 text-neutral-9 hover:text-error-11 transition-colors"
+                          >
+                            <DollarSign size={12} />
+                            Refund
+                          </button>
+                        )}
+                        <span className="text-size-2 font-medium text-neutral-12">${(order.total_cents / 100).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -804,6 +835,62 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
           </button>
         </TabsContent>
       </Tabs>
+
+      {/* Refund dialog */}
+      <Dialog open={!!refundDialogOrder} onOpenChange={(open) => { if (!open) setRefundDialogOrder(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Refund order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-size-2 text-neutral-11">
+              Refunds are processed in Stripe. Issue the refund there first, then mark it here.
+            </p>
+            {refundDialogOrder && (
+              <div className="bg-neutral-2 rounded-3 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-size-1 text-neutral-10 uppercase tracking-wider">Payment intent</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(refundDialogOrder.stripe_payment_intent_id)}
+                    className="text-size-1 text-neutral-10 hover:text-neutral-12 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="text-size-1 font-mono text-neutral-12 break-all">{refundDialogOrder.stripe_payment_intent_id}</p>
+                <a
+                  href={`https://dashboard.stripe.com/payments/${refundDialogOrder.stripe_payment_intent_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-size-1 text-accent-11 hover:underline mt-1"
+                >
+                  Open in Stripe ↗
+                </a>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={refundPending}
+              onClick={async () => {
+                if (!refundDialogOrder) return;
+                setRefundPending(true);
+                await markOrderRefunded(refundDialogOrder.id, drop.id);
+                setRefundPending(false);
+                setRefundDialogOrder(null);
+                router.refresh();
+              }}
+            >
+              {refundPending ? "Saving…" : "Mark as refunded"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add item dialog */}
       <Dialog open={addItemOpen} onOpenChange={(open) => {

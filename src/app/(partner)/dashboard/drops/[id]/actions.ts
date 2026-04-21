@@ -303,6 +303,32 @@ export async function seedOrders(dropId: string, mode: "full" | "partial") {
   return { created: ordersCreated };
 }
 
+export async function markOrderRefunded(orderId: string, dropId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  await supabase
+    .from("orders")
+    .update({ refunded_at: new Date().toISOString() })
+    .eq("id", orderId);
+
+  revalidatePath(`/dashboard/drops/${dropId}`);
+}
+
+export async function updateOrderNotes(orderId: string, dropId: string, notes: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  await supabase
+    .from("orders")
+    .update({ notes: notes || null })
+    .eq("id", orderId);
+
+  revalidatePath(`/dashboard/drops/${dropId}`);
+}
+
 export async function addDropItem(
   dropId: string,
   itemId: string,

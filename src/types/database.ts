@@ -206,6 +206,7 @@ export type Database = {
           picked_up_at: string | null
           platform_fee_cents: number
           ready_at: string | null
+          notes: string | null
           refunded_at: string | null
           state: Database["public"]["Enums"]["order_state"]
           stripe_payment_intent_id: string
@@ -220,6 +221,7 @@ export type Database = {
           customer_phone?: string | null
           drop_id: string
           id?: string
+          notes?: string | null
           paid_at?: string
           picked_up_at?: string | null
           platform_fee_cents: number
@@ -238,6 +240,7 @@ export type Database = {
           customer_phone?: string | null
           drop_id?: string
           id?: string
+          notes?: string | null
           paid_at?: string
           picked_up_at?: string | null
           platform_fee_cents?: number
