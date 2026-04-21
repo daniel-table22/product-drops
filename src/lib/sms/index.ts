@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { twilioClient, TWILIO_PHONE } from "@/lib/twilio/client";
+import { twilioClient, TWILIO_MESSAGING_SERVICE_SID } from "@/lib/twilio/client";
 
 export async function isSmsTestMode(): Promise<boolean> {
   const supabase = createServiceClient();
@@ -23,7 +23,11 @@ export async function sendSms(
   }
 
   if (process.env.SMS_ENABLED === "true") {
-    await twilioClient.messages.create({ to, from: TWILIO_PHONE, body });
+    await twilioClient.messages.create({
+      to,
+      messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
+      body,
+    });
   } else {
     console.log("[SMS noop — SMS_ENABLED not set]", { to, body });
   }
