@@ -16,10 +16,9 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { createItem, updateItem, archiveItem, seedItems } from "./actions";
+import { CATEGORIES } from "@/lib/category-photos";
 
 type Item = Tables<"items">;
-
-const SEED_CATEGORIES = ["baker", "butcher", "alcohol", "wine", "cheese", "provisions", "restaurant"] as const;
 
 export function ProductsClient({ items, userId, isAdmin, uiTestMode }: { items: Item[]; userId: string; isAdmin: boolean; uiTestMode: boolean }) {
   const router = useRouter();
@@ -77,7 +76,7 @@ export function ProductsClient({ items, userId, isAdmin, uiTestMode }: { items: 
                 disabled={seedPending}
                 className="h-7 rounded-3 border border-neutral-6 bg-surface px-2 text-size-1 text-neutral-12 focus:outline-none focus:ring-2 focus:ring-accent-8"
               >
-                {SEED_CATEGORIES.map((c) => (
+                {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

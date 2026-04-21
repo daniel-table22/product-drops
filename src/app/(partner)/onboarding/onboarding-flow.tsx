@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createPartner, generatePreview } from "./actions";
 import type { ToneData, PreviewData } from "./actions";
+import { getPhotosForBusinessType } from "@/lib/category-photos";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -473,86 +474,7 @@ function Step2({
 }
 
 // ─── step 3: the magic mart ───────────────────────────────────────────────────
-
-const PREVIEW_PHOTOS = [
-  "/preview-photos/photo-1.jpeg",
-  "/preview-photos/photo-2.jpeg",
-  "/preview-photos/photo-3.png",
-  "/preview-photos/photo-4.png",
-  "/preview-photos/photo-5.jpeg",
-];
-
-const CATEGORY_PHOTOS: Record<string, string[]> = {
-  alcohol: [
-    "/illustrations/alcohol/1.jpeg",
-    "/illustrations/alcohol/2.jpeg",
-    "/illustrations/alcohol/3.png",
-    "/illustrations/alcohol/4.png",
-    "/illustrations/alcohol/5.png",
-  ],
-  baker: [
-    "/illustrations/baker/1.jpeg",
-    "/illustrations/baker/2.jpeg",
-    "/illustrations/baker/3.png",
-    "/illustrations/baker/4.png",
-    "/illustrations/baker/5.jpeg",
-  ],
-  butcher: [
-    "/illustrations/butcher/1.jpg",
-    "/illustrations/butcher/2.jpeg",
-    "/illustrations/butcher/3.jpg",
-    "/illustrations/butcher/4.jpeg",
-    "/illustrations/butcher/5.jpeg",
-  ],
-  cheese: [
-    "/illustrations/cheese/1.jpg",
-  ],
-  provisions: [
-    "/illustrations/provisions/1.jpeg",
-    "/illustrations/provisions/2.jpeg",
-    "/illustrations/provisions/3.png",
-    "/illustrations/provisions/4.png",
-    "/illustrations/provisions/5.png",
-  ],
-  restaurant: [
-    "/illustrations/restaurant/1.jpg",
-    "/illustrations/restaurant/2.jpg",
-    "/illustrations/restaurant/3.jpg",
-  ],
-  wine: [
-    "/illustrations/wine/1.jpeg",
-    "/illustrations/wine/2.jpeg",
-    "/illustrations/wine/3.jpeg",
-    "/illustrations/wine/4.jpeg",
-    "/illustrations/wine/5.png",
-  ],
-};
-
-function getPreviewPhotos(businessType: string): string[] {
-  const t = businessType.toLowerCase();
-  if (t.includes("baker") || t.includes("bread") || t.includes("pastry") || t.includes("boulangerie") || t.includes("patisserie")) {
-    return CATEGORY_PHOTOS.baker;
-  }
-  if (t.includes("butcher") || t.includes("meat") || t.includes("charcuterie")) {
-    return CATEGORY_PHOTOS.butcher;
-  }
-  if (t.includes("cheese") || t.includes("fromagerie") || t.includes("dairy")) {
-    return CATEGORY_PHOTOS.cheese;
-  }
-  if (t.includes("wine") && !t.includes("bar")) {
-    return CATEGORY_PHOTOS.wine;
-  }
-  if (t.includes("alcohol") || t.includes("spirit") || t.includes("distill") || t.includes("brewery") || t.includes("beer") || t.includes("wine bar") || t.includes("bottle shop") || t.includes("liquor")) {
-    return CATEGORY_PHOTOS.alcohol;
-  }
-  if (t.includes("restaurant") || t.includes("bistro") || t.includes("cafe") || t.includes("diner") || t.includes("eatery") || t.includes("brasserie") || t.includes("tavern")) {
-    return CATEGORY_PHOTOS.restaurant;
-  }
-  if (t.includes("provision") || t.includes("grocer") || t.includes("deli") || t.includes("market") || t.includes("farm") || t.includes("produce") || t.includes("pantry")) {
-    return CATEGORY_PHOTOS.provisions;
-  }
-  return PREVIEW_PHOTOS;
-}
+// Category photos live in src/lib/category-photos.ts (shared with item autofill).
 
 // Phone bezel constants (matches /public/bezel.png)
 const BEZEL_W = 447, BEZEL_H = 906;
@@ -890,6 +812,26 @@ function Step3({
   logoUrl: string | null;
 }) {
   const [done, setDone] = useState(false);
+  const [stagedCard, setStagedCard] = useState<string | null>(null);
+  const [stagingCard, setStagingCard] = useState(true);
+  const cardStarted = useRef(false);
+
+  useEffect(() => {
+    if (cardStarted.current) return;
+    cardStarted.current = true;
+    fetch("/api/onboarding/stage-card", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ logoUrl, caption: preview.instagram, businessName, businessType: tone.business_type }),
+    })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d: { imageDataUrl?: string }) => {
+        if (d.imageDataUrl) setStagedCard(d.imageDataUrl);
+      })
+      .catch(() => {})
+      .finally(() => setStagingCard(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (done) {
     return (
@@ -909,7 +851,7 @@ function Step3({
     );
   }
 
-  const photos = getPreviewPhotos(tone.business_type);
+  const photos = getPhotosForBusinessType(tone.business_type);
 
   return (
     <div className="w-full max-w-7xl">
@@ -964,6 +906,24 @@ function Step3({
             <EmailPhoneContent email={preview.email} businessName={businessName} photos={photos} logoUrl={logoUrl} />
           </PhoneBezel>
         </div>
+      </div>
+
+      {/* Staged card */}
+      <div className="mb-10">
+        <p className="text-xs font-medium text-neutral-10 uppercase tracking-widest mb-4">In context</p>
+        {stagingCard && (
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full border-2 border-neutral-4 border-t-neutral-9 animate-spin shrink-0" />
+            <p className="text-sm text-neutral-10 italic">Staging your card…</p>
+          </div>
+        )}
+        {stagedCard && (
+          <img
+            src={stagedCard}
+            alt="Staged marketing card"
+            className="rounded-2xl shadow-lg max-w-sm"
+          />
+        )}
       </div>
 
       <div className="border-t border-neutral-5 pt-6 flex items-center justify-between">
