@@ -3,13 +3,24 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendSms } from "@/lib/sms";
 
+function normalizePhone(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (raw.trim().startsWith("+") && digits.length >= 10) return `+${digits}`;
+  return null;
+}
+
 export async function subscribeToDrops(
   formData: FormData
 ): Promise<{ error?: string; dropSlug?: string }> {
   const partnerSlug = formData.get("partner_slug") as string;
-  const phone = (formData.get("phone") as string).trim();
+  const rawPhone = (formData.get("phone") as string).trim();
 
-  if (!phone) return { error: "Please enter a phone number." };
+  if (!rawPhone) return { error: "Please enter a phone number." };
+
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return { error: "Please enter a valid phone number." };
 
   const supabase = createServiceClient();
   const serviceClient = createServiceClient();
