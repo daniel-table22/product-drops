@@ -138,8 +138,6 @@ const CATEGORY_SEEDS: Record<string, { photos: string[]; items: SeedItem[] }> = 
   },
 };
 
-export const SEED_CATEGORIES = Object.keys(CATEGORY_SEEDS);
-
 export async function seedItems(
   category: string
 ): Promise<{ inserted: number; skipped?: boolean; reason?: string; error?: string }> {
