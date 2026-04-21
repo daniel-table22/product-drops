@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/service";
 import { SubscribeForm } from "./subscribe-form";
 import { ThemeListener } from "@/components/theme-listener";
+import { getPhotosForBusinessType } from "@/lib/category-photos";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -32,11 +33,18 @@ export default async function StorefrontPage({
 
   const { data: partner } = await supabase
     .from("partners")
-    .select("id, business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style, intro_heading, intro_body")
+    .select("id, business_name, slug, pickup_address, logo_url, hero_url, bg_color, fg_color, accent_color, font_style, intro_heading, intro_body, tone")
     .eq("slug", slug)
     .single();
 
   if (!partner) notFound();
+
+  // Fallback hero when the partner hasn't uploaded one: pick a stable photo
+  // from their category pool (from onboarding's tone.business_type), or a
+  // generic mix if we don't know the category yet.
+  const businessType = (partner.tone as { business_type?: string } | null)?.business_type ?? "";
+  const categoryPhotos = getPhotosForBusinessType(businessType);
+  const heroImage = partner.hero_url ?? categoryPhotos[0] ?? null;
 
   const { data: drops } = await supabase
     .from("drops")
@@ -90,10 +98,10 @@ export default async function StorefrontPage({
       <div className="px-2 pt-[30px] pb-12 flex flex-col gap-6">
 
         {/* partner-photo */}
-        {partner.hero_url ? (
+        {heroImage ? (
           <div data-name="partner-photo" className="w-full aspect-square rounded-2xl overflow-hidden shadow-[0px_4px_16px_-8px_rgba(0,0,0,0.1),0px_3px_12px_-4px_rgba(0,0,0,0.1),0px_2px_3px_-2px_rgba(0,0,51,0.06)]">
             <img
-              src={partner.hero_url}
+              src={heroImage}
               alt={partner.business_name}
               className="w-full h-full object-cover rounded-2xl"
             />
