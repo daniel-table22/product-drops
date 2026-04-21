@@ -76,7 +76,13 @@ type SeedItem = { name: string; description: string; price: number };
 
 const CATEGORY_SEEDS: Record<string, { photos: string[]; items: SeedItem[] }> = {
   baker: {
-    photos: ["1.jpeg", "2.jpeg", "3.png", "4.png", "5.jpeg"],
+    photos: [
+      "5Aop72ShQHGGGOLy0t7JLg.jpeg",
+      "6VFsROUVS2mDLFhgdYcKvQ.png",
+      "6riUhak2SuqoreAnSHkoGA.jpeg",
+      "7F3T8p-zR_ihH3VEsh6HkA.png",
+      "a3ln2zaiQSCNBo-bB7fbpA.jpeg",
+    ],
     items: [
       { name: "Sourdough Loaf", description: "24-hour naturally leavened, dark crust", price: 10 },
       { name: "Butter Croissant", description: "Hand-laminated with European butter", price: 5 },
@@ -86,7 +92,13 @@ const CATEGORY_SEEDS: Record<string, { photos: string[]; items: SeedItem[] }> = 
     ],
   },
   butcher: {
-    photos: ["1.jpg", "2.jpeg", "3.jpg", "4.jpeg", "5.jpeg"],
+    photos: [
+      "butcher1.jpg",
+      "butcher2.jpeg",
+      "butcher3.jpg",
+      "premium_photo-1722686466966-d4290d91faab.jpeg",
+      "premium_photo-1726869690878-85cd6cab7437.jpeg",
+    ],
     items: [
       { name: "Dry-Aged Ribeye", description: "45-day dry-aged, 16oz", price: 38 },
       { name: "Pork Ribs", description: "Heritage breed, bone-in rack", price: 24 },
@@ -96,7 +108,13 @@ const CATEGORY_SEEDS: Record<string, { photos: string[]; items: SeedItem[] }> = 
     ],
   },
   alcohol: {
-    photos: ["1.jpeg", "2.jpeg", "3.png", "4.png", "5.png"],
+    photos: [
+      "Screen-Shot-2022-09-15-at-1.58.19-PM.png",
+      "Unknown-8.jpg.webp",
+      "Woody-Creek-Mary-s-Select-Gin-ForWhiskeyLovers-1.png.webp",
+      "spirit-works-gin.jpg.webp",
+      "suntory-suntory-roku-gin-750ml.jpg",
+    ],
     items: [
       { name: "Small Batch Bourbon", description: "Rye-forward, 750ml", price: 48 },
       { name: "Mezcal Espadín", description: "Artisanal, Oaxaca", price: 52 },
@@ -106,20 +124,45 @@ const CATEGORY_SEEDS: Record<string, { photos: string[]; items: SeedItem[] }> = 
     ],
   },
   wine: {
-    photos: ["1.jpeg", "2.jpeg"],
+    photos: [
+      "21F6D2C8-B53E-45B9-ABB9-F77B0C802DB5_1184x1184.jpg",
+      "4D69A66E-3862-4F24-913D-58AABC3F6668_1184x1184.jpg",
+      "wine1.jpeg",
+      "wine2.jpeg",
+      "wine3.jpeg",
+    ],
     items: [
       { name: "Natural Orange Wine", description: "Skin-contact, unfiltered", price: 34 },
       { name: "Pét-Nat Rosé", description: "Ancestral method, bubbly", price: 28 },
+      { name: "Biodynamic Red", description: "Earthy, medium-bodied", price: 32 },
+      { name: "Estate Chardonnay", description: "Lightly oaked, Sonoma", price: 38 },
+      { name: "Amphora Skin Contact", description: "Unconventional, complex", price: 44 },
     ],
   },
   cheese: {
-    photos: ["1.jpg"],
+    photos: [
+      "camembert.jpeg",
+      "cammebert.jpeg",
+      "cheese1.jpg",
+      "cheese2.jpg",
+      "photo-1668094497457-29f4bd775c95.jpeg",
+    ],
     items: [
       { name: "Aged Comté", description: "24-month, Jura mountains", price: 18 },
+      { name: "Camembert", description: "Bloomy rind, creamy center", price: 14 },
+      { name: "Blue Stilton", description: "English classic, 8oz wedge", price: 22 },
+      { name: "Burrata", description: "Hand-pulled, delivered fresh", price: 16 },
+      { name: "Aged Gruyère", description: "18-month cave-aged", price: 20 },
     ],
   },
   provisions: {
-    photos: ["1.jpeg", "2.jpeg", "3.png", "4.png", "5.png"],
+    photos: [
+      "5Aop72ShQHGGGOLy0t7JLg.jpeg",
+      "6VFsROUVS2mDLFhgdYcKvQ.png",
+      "6riUhak2SuqoreAnSHkoGA.jpeg",
+      "7F3T8p-zR_ihH3VEsh6HkA.png",
+      "9d3ada90-4914-493d-af7e-27183804e516.png",
+    ],
     items: [
       { name: "Single-Origin Olive Oil", description: "Cold-pressed, Sicilian", price: 32 },
       { name: "Flaky Sea Salt", description: "Maldon, 8oz tin", price: 8 },
@@ -129,11 +172,19 @@ const CATEGORY_SEEDS: Record<string, { photos: string[]; items: SeedItem[] }> = 
     ],
   },
   restaurant: {
-    photos: ["1.jpg", "2.jpg", "3.jpg"],
+    photos: [
+      "Unknown.jpeg",
+      "rintaro bento01.jpg",
+      "rintaro bento03.jpg",
+      "rintaro bento04.jpg",
+      "unnamed-5.jpg",
+    ],
     items: [
       { name: "Family-Style Lasagna", description: "Feeds 4–6, ready to heat", price: 42 },
       { name: "Roast Chicken", description: "Brined, herb-stuffed", price: 28 },
       { name: "Seasonal Soup (quart)", description: "Chef's daily, served chilled or hot", price: 14 },
+      { name: "Chef's Bento Box", description: "Seasonal selection, single serving", price: 22 },
+      { name: "House-Made Pasta", description: "Fresh, 1lb, sauce included", price: 18 },
     ],
   },
 };
@@ -176,7 +227,7 @@ export async function seedItems(
     partner_id: partner.id,
     name: it.name,
     description: it.description,
-    photo_url: `/preview-photos/${category}/${seed.photos[idx]}`,
+    photo_url: `/preview-photos/${category}/${encodeURIComponent(seed.photos[idx])}`,
     default_price_cents: Math.round(it.price * 100),
   }));
 
