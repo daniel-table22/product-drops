@@ -19,7 +19,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { toggleUiTestMode } from "@/app/(partner)/dashboard/settings/actions";
+import { toggleUiTestMode, resetTestData } from "@/app/(partner)/dashboard/settings/actions";
 
 type NavItem = {
   label: string;
@@ -90,6 +90,24 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 function AdminDrawer({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const [resetPending, startReset] = useTransition();
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+
+  function handleReset() {
+    const ok = window.confirm(
+      "This will delete ALL items, drops, orders, subscribers, and contacts for this partner.\n\nAre you sure?"
+    );
+    if (!ok) return;
+    setResetMsg(null);
+    startReset(async () => {
+      const res = await resetTestData();
+      if (res.error) setResetMsg(res.error);
+      else setResetMsg("All test data deleted.");
+      router.refresh();
+    });
+  }
+
   return (
     <>
       {/* Backdrop */}
@@ -145,6 +163,22 @@ function AdminDrawer({ onClose }: { onClose: () => void }) {
               <li className="flex gap-2"><span className="text-neutral-8 mt-0.5">•</span><span>Toggle between test mode (SMS suppressed, logged to console) and live in Settings → SMS</span></li>
             </ul>
           </div>
+        </div>
+
+        {/* Destructive actions */}
+        <div className="border-t border-neutral-6 px-5 py-4 space-y-2">
+          <p className="text-xs font-semibold text-error-11 uppercase tracking-wide">Destructive</p>
+          <button
+            onClick={handleReset}
+            disabled={resetPending}
+            className="w-full text-left px-3 py-2 rounded-2 text-sm font-medium text-error-11 hover:bg-error-3 transition-colors disabled:opacity-40"
+          >
+            {resetPending ? "Resetting…" : "🧪 Reset test data"}
+          </button>
+          <p className="text-xs text-neutral-10 px-3">
+            Deletes all items, drops, orders, subscribers, and contacts for this partner.
+          </p>
+          {resetMsg && <p className="text-xs text-neutral-10 px-3">{resetMsg}</p>}
         </div>
       </div>
     </>
