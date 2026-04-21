@@ -11,3 +11,12 @@ export async function toggleSmsTestMode(testMode: boolean) {
     .eq("id", true);
   revalidatePath("/dashboard/settings");
 }
+
+export async function toggleUiTestMode(testMode: boolean) {
+  const supabase = createServiceClient();
+  await supabase
+    .from("system_settings")
+    .update({ ui_test_mode: testMode })
+    .eq("id", true);
+  revalidatePath("/dashboard", "layout");
+}

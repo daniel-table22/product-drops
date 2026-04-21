@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { DropDetailClient } from "./drop-detail-client";
 
 export default async function DropDetailPage({
@@ -51,11 +52,20 @@ export default async function DropDetailPage({
 
   const libraryItems = (allItems ?? []).filter((item) => !attachedItemIds.has(item.id));
 
-  const { count: subscriberCount } = await supabase
-    .from("subscribers")
-    .select("id", { count: "exact", head: true })
-    .eq("partner_id", partner.id)
-    .eq("opted_in", true);
+  const isAdmin = user.email?.endsWith("@table22.com") ?? false;
+
+  const [{ count: subscriberCount }, { data: settings }] = await Promise.all([
+    supabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("partner_id", partner.id)
+      .eq("opted_in", true),
+    isAdmin
+      ? createServiceClient().from("system_settings").select("ui_test_mode").single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const uiTestMode = (settings as { ui_test_mode?: boolean } | null)?.ui_test_mode ?? false;
 
   return (
     <DropDetailClient
@@ -68,6 +78,8 @@ export default async function DropDetailPage({
       subscriberCount={subscriberCount ?? 0}
       businessName={partner.business_name}
       userId={user.id}
+      isAdmin={isAdmin}
+      uiTestMode={uiTestMode}
     />
   );
 }

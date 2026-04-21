@@ -110,9 +110,11 @@ interface Props {
   subscriberCount: number;
   businessName: string;
   userId: string;
+  isAdmin: boolean;
+  uiTestMode: boolean;
 }
 
-export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName, userId }: Props) {
+export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStripeReady, partnerSlug, subscriberCount, businessName, userId, isAdmin, uiTestMode }: Props) {
   const router = useRouter();
   const updateDropWithId = updateDrop.bind(null, drop.id);
   const [addItemOpen, setAddItemOpen] = useState(false);
@@ -573,8 +575,8 @@ export function DropDetailClient({ drop, dropItems, orders, libraryItems, isStri
 
         {/* ── Orders ── */}
         <TabsContent value="orders" className="pt-2 space-y-4">
-          {/* Seed buttons — only shown before/during orders */}
-          {(drop.state === "orders_open" || drop.state === "scheduled") && (
+          {/* Seed buttons — only shown to T22 admins in testing mode */}
+          {isAdmin && uiTestMode && (drop.state === "orders_open" || drop.state === "scheduled") && (
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" disabled={seedPartialPending || seedFullPending}
                 onClick={async () => {
