@@ -40,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# brand-essence
+/brand-essence/node_modules
+/brand-essence/runs
